@@ -1,0 +1,1085 @@
+{
+  "generatedAt": "2026-04-09T06:33:54.426Z",
+  "backend": "sqlite",
+  "handoffDataPath": "/Users/im_018/Documents/GitHub/2026_important/figma_skills/xlink/data/handoffs.sqlite",
+  "devlogDataPath": "/Users/im_018/Documents/GitHub/2026_important/figma_skills/devlog/data/devlogs.json",
+  "summary": {
+    "totalHandoffs": 27,
+    "byStatus": {
+      "pending": 3,
+      "claimed": 0,
+      "completed": 24,
+      "blocked": 0,
+      "rejected": 0
+    },
+    "byChannel": {
+      "bridge": 3,
+      "devlog": 24
+    },
+    "channelStores": 4,
+    "devlogEntries": 32
+  },
+  "recentHandoffs": [
+    {
+      "id": "handoff_2026_04_09_004",
+      "channel": "bridge",
+      "targetAgent": "bridge-agent",
+      "sourceAgent": "analysis-agent",
+      "title": "validate compose payload auto block smoke",
+      "status": "pending",
+      "priority": "medium",
+      "createdAt": "2026-04-09T06:30:51.596Z",
+      "updatedAt": "2026-04-09T06:31:19.914Z",
+      "claimedAt": null,
+      "completedAt": null,
+      "claimedBy": null,
+      "payload": {
+        "type": "feature",
+        "title": "validate compose payload auto block smoke",
+        "date": "2026.04.09 오후 10:36",
+        "details": [
+          "auto block when cannot compose"
+        ],
+        "tags": [
+          "xlink",
+          "xbridge",
+          "validation"
+        ],
+        "parentId": "817:417",
+        "intentSections": [
+          {
+            "title": "missing intent only"
+          }
+        ],
+        "files": [],
+        "links": []
+      },
+      "artifacts": [],
+      "messages": [
+        {
+          "author": "bridge-agent",
+          "body": "xbridge compose validation blocked: 1 error(s), 2 warning(s)",
+          "kind": "note",
+          "createdAt": "2026-04-09T06:31:19.914Z"
+        }
+      ]
+    },
+    {
+      "id": "handoff_2026_04_09_003",
+      "channel": "devlog",
+      "targetAgent": "devlog-agent",
+      "sourceAgent": "bridge-agent",
+      "title": "xlink xbridge validation integration",
+      "status": "completed",
+      "priority": "medium",
+      "createdAt": "2026-04-08T22:11:50.361Z",
+      "updatedAt": "2026-04-08T22:11:50.372Z",
+      "claimedAt": "2026-04-08T22:11:50.368Z",
+      "completedAt": "2026-04-08T22:11:50.372Z",
+      "claimedBy": "devlog-agent",
+      "payload": {
+        "type": "feature",
+        "title": "xlink can validate xbridge compose payloads",
+        "date": "2026.04.08 오후 9:11",
+        "summary": "xlink handoff에서 Xbridge compose 계약 검증을 직접 호출하고 conversation에 결과를 남길 수 있게 했다.",
+        "details": [
+          "handoff payload를 Xbridge validate_external_compose_input에 전달하는 xbridge-validate route를 추가했다.",
+          "CLI validate-xbridge-compose 명령으로 같은 흐름을 로컬에서 바로 사용할 수 있다.",
+          "실제 handoff를 생성해 dropped intent warning과 validation summary note가 conversation에 남는 것을 확인했다."
+        ],
+        "tags": [
+          "xlink",
+          "xbridge",
+          "validation",
+          "mailbox"
+        ],
+        "status": "done",
+        "version": "0.1.0",
+        "commit": "",
+        "files": [
+          "xlink/src/xbridge-validator.js",
+          "xlink/src/routes/handoffs.js",
+          "xlink/src/cli.js",
+          "xlink/tests/xbridge-validator.test.js",
+          "xlink/README.md"
+        ],
+        "links": [],
+        "thumbnail": "",
+        "codeSnippets": [
+          {
+            "file": "xlink/src/routes/handoffs.js",
+            "label": "handoff xbridge validate route",
+            "language": "js",
+            "code": "if (request.method === \"POST\" && pathParts[2] === \"xbridge-validate\") { const handoff = await store.getById(id); const validationResult = await validateXbridgeComposePayload(body.payload ?? handoff.payload ?? {}, { baseUrl: body.baseUrl }); ... }"
+          }
+        ]
+      },
+      "artifacts": [],
+      "messages": [
+        {
+          "author": "devlog-agent",
+          "body": "devlog sync started",
+          "kind": "note",
+          "createdAt": "2026-04-08T22:11:50.369Z"
+        },
+        {
+          "author": "devlog-agent",
+          "body": "devlog card ingested and handoff completed",
+          "kind": "result",
+          "createdAt": "2026-04-08T22:11:50.372Z"
+        }
+      ]
+    },
+    {
+      "id": "handoff_2026_04_09_002",
+      "channel": "bridge",
+      "targetAgent": "bridge-agent",
+      "sourceAgent": "analysis-agent",
+      "title": "validate compose payload smoke",
+      "status": "pending",
+      "priority": "medium",
+      "createdAt": "2026-04-08T21:10:25.759Z",
+      "updatedAt": "2026-04-08T21:10:46.063Z",
+      "claimedAt": null,
+      "completedAt": null,
+      "claimedBy": null,
+      "payload": {
+        "type": "feature",
+        "title": "validate compose payload smoke",
+        "date": "2026.04.08 오후 3:42",
+        "details": [
+          "xbridge validation route smoke"
+        ],
+        "tags": [
+          "xlink",
+          "xbridge",
+          "validation"
+        ],
+        "summary": "xbridge contract validation smoke",
+        "parentId": "817:417",
+        "intentSections": [
+          {
+            "intent": "screen/topbar",
+            "title": "Overview"
+          },
+          {
+            "title": "drop me"
+          }
+        ],
+        "files": [],
+        "links": []
+      },
+      "artifacts": [],
+      "messages": [
+        {
+          "author": "bridge-agent",
+          "body": "xbridge compose validation ready: 0 error(s), 2 warning(s)",
+          "kind": "note",
+          "createdAt": "2026-04-08T21:10:46.063Z"
+        }
+      ]
+    },
+    {
+      "id": "handoff_2026_04_09_001",
+      "channel": "bridge",
+      "targetAgent": "bridge-agent",
+      "sourceAgent": "analysis-agent",
+      "title": "validate compose payload smoke",
+      "status": "pending",
+      "priority": "medium",
+      "createdAt": "2026-04-08T20:09:44.594Z",
+      "updatedAt": "2026-04-08T20:09:44.594Z",
+      "claimedAt": null,
+      "completedAt": null,
+      "claimedBy": null,
+      "payload": {
+        "type": "feature",
+        "title": "validate compose payload smoke",
+        "date": "2026.04.08 오후 3:40",
+        "details": [
+          "xbridge contract validation smoke"
+        ],
+        "tags": [
+          "xbridge",
+          "validation"
+        ],
+        "summary": "xbridge contract validation smoke",
+        "parentId": "817:417",
+        "intentSections": [
+          {
+            "intent": "screen/topbar",
+            "title": "Overview"
+          },
+          {
+            "title": "drop me"
+          }
+        ],
+        "files": [],
+        "links": []
+      },
+      "artifacts": [],
+      "messages": []
+    },
+    {
+      "id": "handoff_2026_04_08_018",
+      "channel": "devlog",
+      "targetAgent": "devlog-agent",
+      "sourceAgent": "bridge-agent",
+      "title": "external compose validation added",
+      "status": "completed",
+      "priority": "medium",
+      "createdAt": "2026-04-08T08:12:16.188Z",
+      "updatedAt": "2026-04-08T08:12:16.192Z",
+      "claimedAt": "2026-04-08T08:12:16.191Z",
+      "completedAt": "2026-04-08T08:12:16.192Z",
+      "claimedBy": "devlog-agent",
+      "payload": {
+        "type": "feature",
+        "title": "external compose input validation added",
+        "date": "08 April, 2026",
+        "summary": "외부 분석기 payload를 compose 전에 검사하는 validate_external_compose_input 경로를 추가했다.",
+        "details": [
+          "intentSections와 referenceAnalysis 입력을 계약 기준으로 정규화하고 오류와 경고를 함께 반환한다.",
+          "외부 에이전트가 dropped entry, missing parentId, missing intent section을 compose 전에 바로 확인할 수 있다.",
+          "HTTP /api/validate-external-compose-input 과 MCP validate_external_compose_input 으로 동일하게 쓸 수 있다."
+        ],
+        "tags": [
+          "xbridge",
+          "contract",
+          "validation",
+          "compose"
+        ],
+        "status": "done",
+        "version": "0.2.0",
+        "commit": "03afa91",
+        "files": [
+          "src/validate-external-compose-input.js",
+          "src/server.js",
+          "tests/validate-external-compose-input.test.js",
+          "docs/authoring/external-analyzer-compose-contract.md",
+          "README.md"
+        ],
+        "links": [],
+        "thumbnail": "",
+        "codeSnippets": [
+          {
+            "file": "src/validate-external-compose-input.js",
+            "label": "validation result shape",
+            "language": "js",
+            "code": "return { ok: errors.length === 0, canCompose: errors.length === 0, errors, warnings, normalizedInput, resolved: { source: resolved.source, sectionCount: normalizeArray(resolved.sections).length, sections: resolved.sections } };"
+          }
+        ]
+      },
+      "artifacts": [],
+      "messages": [
+        {
+          "author": "devlog-agent",
+          "body": "devlog sync started",
+          "kind": "note",
+          "createdAt": "2026-04-08T08:12:16.191Z"
+        },
+        {
+          "author": "devlog-agent",
+          "body": "devlog card ingested and handoff completed",
+          "kind": "result",
+          "createdAt": "2026-04-08T08:12:16.192Z"
+        }
+      ]
+    },
+    {
+      "id": "handoff_2026_04_08_017",
+      "channel": "devlog",
+      "targetAgent": "devlog-agent",
+      "sourceAgent": "bridge-agent",
+      "title": "external analyzer compose contract added",
+      "status": "completed",
+      "priority": "medium",
+      "createdAt": "2026-04-08T06:26:12.361Z",
+      "updatedAt": "2026-04-08T06:26:12.366Z",
+      "claimedAt": "2026-04-08T06:26:12.364Z",
+      "completedAt": "2026-04-08T06:26:12.366Z",
+      "claimedBy": "devlog-agent",
+      "payload": {
+        "type": "feature",
+        "title": "external analyzer compose contract added",
+        "date": "08 April, 2026",
+        "summary": "Defined and implemented a formal compose contract for external analyzers so referenceAnalysis and intentSections can be normalized and consumed consistently by Xbridge.",
+        "details": [
+          "desktop SaaS dashboard shell을 더 짧은 schema로 만들 수 있게 됐다.",
+          "Agent_skill_test 세션으로 실제 smoke 요청을 보내 생성 경로를 확인했다."
+        ],
+        "tags": [
+          "xbridge",
+          "contract",
+          "external-analyzer",
+          "ds-aware"
+        ],
+        "status": "done",
+        "version": "0.2.0",
+        "commit": "pending",
+        "files": [
+          "src/external-analyzer-contract.js",
+          "src/compose-screen-from-intents.js",
+          "docs/authoring/external-analyzer-compose-contract.md"
+        ],
+        "links": [],
+        "thumbnail": "",
+        "codeSnippets": [
+          {
+            "file": "src/build-layout.js",
+            "label": "dashboard-board preset",
+            "language": "js",
+            "code": "// 핵심 변경 부분을 5~25줄 정도로 넣는다."
+          }
+        ]
+      },
+      "artifacts": [],
+      "messages": [
+        {
+          "author": "devlog-agent",
+          "body": "devlog sync started",
+          "kind": "note",
+          "createdAt": "2026-04-08T06:26:12.364Z"
+        },
+        {
+          "author": "devlog-agent",
+          "body": "devlog card ingested and handoff completed",
+          "kind": "result",
+          "createdAt": "2026-04-08T06:26:12.366Z"
+        }
+      ]
+    },
+    {
+      "id": "handoff_2026_04_08_016",
+      "channel": "devlog",
+      "targetAgent": "devlog-agent",
+      "sourceAgent": "bridge-agent",
+      "title": "compose now accepts intent sections directly from external analyzers",
+      "status": "completed",
+      "priority": "medium",
+      "createdAt": "2026-04-08T06:16:03.826Z",
+      "updatedAt": "2026-04-08T06:16:03.830Z",
+      "claimedAt": "2026-04-08T06:16:03.829Z",
+      "completedAt": "2026-04-08T06:16:03.830Z",
+      "claimedBy": "devlog-agent",
+      "payload": {
+        "type": "feature",
+        "title": "compose now accepts intent sections directly from external analyzers",
+        "date": "08 April, 2026",
+        "summary": "Updated compose_screen_from_intents so external analyzers can pass intentSections directly at the top level or inside referenceAnalysis without an extra conversion step.",
+        "details": [
+          "desktop SaaS dashboard shell을 더 짧은 schema로 만들 수 있게 됐다.",
+          "Agent_skill_test 세션으로 실제 smoke 요청을 보내 생성 경로를 확인했다."
+        ],
+        "tags": [
+          "xbridge",
+          "compose-screen-from-intents",
+          "intent-sections",
+          "ds-aware"
+        ],
+        "status": "done",
+        "version": "0.2.0",
+        "commit": "pending",
+        "files": [
+          "src/compose-screen-from-intents.js",
+          "src/server.js",
+          "README.md"
+        ],
+        "links": [],
+        "thumbnail": "",
+        "codeSnippets": [
+          {
+            "file": "src/build-layout.js",
+            "label": "dashboard-board preset",
+            "language": "js",
+            "code": "// 핵심 변경 부분을 5~25줄 정도로 넣는다."
+          }
+        ]
+      },
+      "artifacts": [],
+      "messages": [
+        {
+          "author": "devlog-agent",
+          "body": "devlog sync started",
+          "kind": "note",
+          "createdAt": "2026-04-08T06:16:03.829Z"
+        },
+        {
+          "author": "devlog-agent",
+          "body": "devlog card ingested and handoff completed",
+          "kind": "result",
+          "createdAt": "2026-04-08T06:16:03.830Z"
+        }
+      ]
+    },
+    {
+      "id": "handoff_2026_04_08_015",
+      "channel": "devlog",
+      "targetAgent": "devlog-agent",
+      "sourceAgent": "bridge-agent",
+      "title": "single-call fragment compose verified across four fragment types",
+      "status": "completed",
+      "priority": "medium",
+      "createdAt": "2026-04-08T06:08:58.890Z",
+      "updatedAt": "2026-04-08T06:08:58.894Z",
+      "claimedAt": "2026-04-08T06:08:58.892Z",
+      "completedAt": "2026-04-08T06:08:58.894Z",
+      "claimedBy": "devlog-agent",
+      "payload": {
+        "type": "feature",
+        "title": "single-call fragment compose verified across four fragment types",
+        "date": "08 April, 2026",
+        "summary": "Verified that analyze_selection_to_compose works end-to-end for sidebar, header, actions, and table fragments in the live bridge runtime.",
+        "details": [
+          "desktop SaaS dashboard shell을 더 짧은 schema로 만들 수 있게 됐다.",
+          "Agent_skill_test 세션으로 실제 smoke 요청을 보내 생성 경로를 확인했다."
+        ],
+        "tags": [
+          "xbridge",
+          "analyze-selection-to-compose",
+          "fragments",
+          "smoke"
+        ],
+        "status": "done",
+        "version": "0.2.0",
+        "commit": "pending",
+        "files": [
+          "src/analyze-selection-to-compose.js",
+          "src/analyze-reference-selection.js",
+          "src/server.js"
+        ],
+        "links": [],
+        "thumbnail": "",
+        "codeSnippets": [
+          {
+            "file": "src/build-layout.js",
+            "label": "dashboard-board preset",
+            "language": "js",
+            "code": "// 핵심 변경 부분을 5~25줄 정도로 넣는다."
+          }
+        ]
+      },
+      "artifacts": [],
+      "messages": [
+        {
+          "author": "devlog-agent",
+          "body": "devlog sync started",
+          "kind": "note",
+          "createdAt": "2026-04-08T06:08:58.892Z"
+        },
+        {
+          "author": "devlog-agent",
+          "body": "devlog card ingested and handoff completed",
+          "kind": "result",
+          "createdAt": "2026-04-08T06:08:58.894Z"
+        }
+      ]
+    },
+    {
+      "id": "handoff_2026_04_08_014",
+      "channel": "devlog",
+      "targetAgent": "devlog-agent",
+      "sourceAgent": "bridge-agent",
+      "title": "selection-to-compose flow now runs in one call",
+      "status": "completed",
+      "priority": "medium",
+      "createdAt": "2026-04-08T06:03:41.276Z",
+      "updatedAt": "2026-04-08T06:03:41.280Z",
+      "claimedAt": "2026-04-08T06:03:41.279Z",
+      "completedAt": "2026-04-08T06:03:41.280Z",
+      "claimedBy": "devlog-agent",
+      "payload": {
+        "type": "feature",
+        "title": "selection-to-compose flow now runs in one call",
+        "date": "08 April, 2026",
+        "summary": "Added analyze_selection_to_compose so a selected reference fragment can be analyzed and composed into a DS-aware screen in a single bridge call.",
+        "details": [
+          "desktop SaaS dashboard shell을 더 짧은 schema로 만들 수 있게 됐다.",
+          "Agent_skill_test 세션으로 실제 smoke 요청을 보내 생성 경로를 확인했다."
+        ],
+        "tags": [
+          "xbridge",
+          "analyze-selection-to-compose",
+          "ds-aware",
+          "smoke"
+        ],
+        "status": "done",
+        "version": "0.2.0",
+        "commit": "pending",
+        "files": [
+          "src/analyze-selection-to-compose.js",
+          "src/server.js",
+          "README.md"
+        ],
+        "links": [],
+        "thumbnail": "",
+        "codeSnippets": [
+          {
+            "file": "src/build-layout.js",
+            "label": "dashboard-board preset",
+            "language": "js",
+            "code": "// 핵심 변경 부분을 5~25줄 정도로 넣는다."
+          }
+        ]
+      },
+      "artifacts": [],
+      "messages": [
+        {
+          "author": "devlog-agent",
+          "body": "devlog sync started",
+          "kind": "note",
+          "createdAt": "2026-04-08T06:03:41.279Z"
+        },
+        {
+          "author": "devlog-agent",
+          "body": "devlog card ingested and handoff completed",
+          "kind": "result",
+          "createdAt": "2026-04-08T06:03:41.280Z"
+        }
+      ]
+    },
+    {
+      "id": "handoff_2026_04_08_013",
+      "channel": "devlog",
+      "targetAgent": "devlog-agent",
+      "sourceAgent": "bridge-agent",
+      "title": "fragment analysis heuristics verified for sidebar header actions and table",
+      "status": "completed",
+      "priority": "medium",
+      "createdAt": "2026-04-08T05:25:16.285Z",
+      "updatedAt": "2026-04-08T05:25:16.289Z",
+      "claimedAt": "2026-04-08T05:25:16.288Z",
+      "completedAt": "2026-04-08T05:25:16.289Z",
+      "claimedBy": "devlog-agent",
+      "payload": {
+        "type": "feature",
+        "title": "fragment analysis heuristics verified for sidebar header actions and table",
+        "date": "08 April, 2026",
+        "summary": "Verified live analyze_reference_selection heuristics for sidebar, header, actions, and table-like fragments so partial screen selections can flow into DS-aware compose more reliably.",
+        "details": [
+          "desktop SaaS dashboard shell을 더 짧은 schema로 만들 수 있게 됐다.",
+          "Agent_skill_test 세션으로 실제 smoke 요청을 보내 생성 경로를 확인했다."
+        ],
+        "tags": [
+          "xbridge",
+          "analyze-reference-selection",
+          "fragments",
+          "smoke"
+        ],
+        "status": "done",
+        "version": "0.2.0",
+        "commit": "pending",
+        "files": [
+          "src/analyze-reference-selection.js",
+          "tests/analyze-reference-selection.test.js"
+        ],
+        "links": [],
+        "thumbnail": "",
+        "codeSnippets": [
+          {
+            "file": "src/build-layout.js",
+            "label": "dashboard-board preset",
+            "language": "js",
+            "code": "// 핵심 변경 부분을 5~25줄 정도로 넣는다."
+          }
+        ]
+      },
+      "artifacts": [],
+      "messages": [
+        {
+          "author": "devlog-agent",
+          "body": "devlog sync started",
+          "kind": "note",
+          "createdAt": "2026-04-08T05:25:16.288Z"
+        },
+        {
+          "author": "devlog-agent",
+          "body": "devlog card ingested and handoff completed",
+          "kind": "result",
+          "createdAt": "2026-04-08T05:25:16.289Z"
+        }
+      ]
+    },
+    {
+      "id": "handoff_2026_04_08_012",
+      "channel": "devlog",
+      "targetAgent": "devlog-agent",
+      "sourceAgent": "bridge-agent",
+      "title": "analyze reference selection now detects screen fragments",
+      "status": "completed",
+      "priority": "medium",
+      "createdAt": "2026-04-08T04:56:34.384Z",
+      "updatedAt": "2026-04-08T04:56:34.387Z",
+      "claimedAt": "2026-04-08T04:56:34.386Z",
+      "completedAt": "2026-04-08T04:56:34.387Z",
+      "claimedBy": "devlog-agent",
+      "payload": {
+        "type": "feature",
+        "title": "analyze reference selection now detects screen fragments",
+        "date": "08 April, 2026",
+        "summary": "Improved analyze_reference_selection so narrow rails and named shells like sidebar-shell are classified as sidebar fragments instead of generic mobile detail drafts.",
+        "details": [
+          "desktop SaaS dashboard shell을 더 짧은 schema로 만들 수 있게 됐다.",
+          "Agent_skill_test 세션으로 실제 smoke 요청을 보내 생성 경로를 확인했다."
+        ],
+        "tags": [
+          "xbridge",
+          "analyze-reference-selection",
+          "fragments",
+          "ds-aware"
+        ],
+        "status": "done",
+        "version": "0.2.0",
+        "commit": "pending",
+        "files": [
+          "src/analyze-reference-selection.js",
+          "tests/analyze-reference-selection.test.js"
+        ],
+        "links": [],
+        "thumbnail": "",
+        "codeSnippets": [
+          {
+            "file": "src/build-layout.js",
+            "label": "dashboard-board preset",
+            "language": "js",
+            "code": "// 핵심 변경 부분을 5~25줄 정도로 넣는다."
+          }
+        ]
+      },
+      "artifacts": [],
+      "messages": [
+        {
+          "author": "devlog-agent",
+          "body": "devlog sync started",
+          "kind": "note",
+          "createdAt": "2026-04-08T04:56:34.386Z"
+        },
+        {
+          "author": "devlog-agent",
+          "body": "devlog card ingested and handoff completed",
+          "kind": "result",
+          "createdAt": "2026-04-08T04:56:34.387Z"
+        }
+      ]
+    },
+    {
+      "id": "handoff_2026_04_08_011",
+      "channel": "devlog",
+      "targetAgent": "devlog-agent",
+      "sourceAgent": "bridge-agent",
+      "title": "analyze-to-compose intent flow smoke verified",
+      "status": "completed",
+      "priority": "medium",
+      "createdAt": "2026-04-08T04:44:54.798Z",
+      "updatedAt": "2026-04-08T04:44:54.802Z",
+      "claimedAt": "2026-04-08T04:44:54.801Z",
+      "completedAt": "2026-04-08T04:44:54.802Z",
+      "claimedBy": "devlog-agent",
+      "payload": {
+        "type": "feature",
+        "title": "analyze-to-compose intent flow smoke verified",
+        "date": "08 April, 2026",
+        "summary": "Verified that analyze_reference_selection now returns intentSections in the live bridge runtime and that those sections can be passed directly into compose_screen_from_intents to create a Figma screen.",
+        "details": [
+          "desktop SaaS dashboard shell을 더 짧은 schema로 만들 수 있게 됐다.",
+          "Agent_skill_test 세션으로 실제 smoke 요청을 보내 생성 경로를 확인했다."
+        ],
+        "tags": [
+          "xbridge",
+          "smoke",
+          "analyze-reference-selection",
+          "compose-screen-from-intents"
+        ],
+        "status": "done",
+        "version": "0.2.0",
+        "commit": "pending",
+        "files": [
+          "README.md",
+          "src/analyze-reference-selection.js"
+        ],
+        "links": [],
+        "thumbnail": "",
+        "codeSnippets": [
+          {
+            "file": "src/build-layout.js",
+            "label": "dashboard-board preset",
+            "language": "js",
+            "code": "// 핵심 변경 부분을 5~25줄 정도로 넣는다."
+          }
+        ]
+      },
+      "artifacts": [],
+      "messages": [
+        {
+          "author": "devlog-agent",
+          "body": "devlog sync started",
+          "kind": "note",
+          "createdAt": "2026-04-08T04:44:54.801Z"
+        },
+        {
+          "author": "devlog-agent",
+          "body": "devlog card ingested and handoff completed",
+          "kind": "result",
+          "createdAt": "2026-04-08T04:44:54.802Z"
+        }
+      ]
+    }
+  ],
+  "channelStores": [
+    {
+      "channel": "bridge",
+      "updatedAt": "2026-04-06",
+      "entries": 0,
+      "sampleKinds": [],
+      "previewEntries": [],
+      "filePath": "/Users/im_018/Documents/GitHub/2026_important/figma_skills/xlink/data/channels/bridge.json"
+    },
+    {
+      "channel": "docs",
+      "updatedAt": "2026-04-06",
+      "entries": 1,
+      "sampleKinds": [
+        "docs-brief"
+      ],
+      "previewEntries": [
+        {
+          "kind": "docs-brief",
+          "channel": "docs",
+          "data": {
+            "kind": "docs-brief",
+            "id": "handoff_2026_04_06_001",
+            "channel": "devlog",
+            "title": "세션 패널 추가 내용 devlog 등록",
+            "status": "completed",
+            "priority": "medium",
+            "sourceAgent": "bridge-agent",
+            "targetAgent": "devlog-agent",
+            "createdAt": "2026-04-06T16:20:00+09:00",
+            "payload": {
+              "type": "feature",
+              "title": "활성 세션 패널 추가",
+              "date": "06 April, 2026",
+              "summary": "플러그인 UI에서 api/sessions 기반 세션 목록 표시를 추가했다.",
+              "details": [
+                "현재 세션을 강조 표시한다.",
+                "목록 새로고침 버튼을 함께 제공한다."
+              ],
+              "tags": [
+                "sessions",
+                "ui",
+                "plugin"
+              ],
+              "files": [
+                "figma-plugin/ui.html"
+              ],
+              "commit": null
+            },
+            "artifacts": [
+              {
+                "type": "thumbnail",
+                "path": "./assets/ui/sessions-panel.png",
+                "label": "plugin sessions panel"
+              }
+            ],
+            "suggestedSections": [
+              "What changed",
+              "Why it matters",
+              "Files touched",
+              "Follow-up notes"
+            ]
+          }
+        }
+      ],
+      "filePath": "/Users/im_018/Documents/GitHub/2026_important/figma_skills/xlink/data/channels/docs.json"
+    },
+    {
+      "channel": "figma",
+      "updatedAt": "2026-04-06",
+      "entries": 0,
+      "sampleKinds": [],
+      "previewEntries": [],
+      "filePath": "/Users/im_018/Documents/GitHub/2026_important/figma_skills/xlink/data/channels/figma.json"
+    },
+    {
+      "channel": "review",
+      "updatedAt": "2026-04-06",
+      "entries": 0,
+      "sampleKinds": [],
+      "previewEntries": [],
+      "filePath": "/Users/im_018/Documents/GitHub/2026_important/figma_skills/xlink/data/channels/review.json"
+    }
+  ],
+  "devlog": {
+    "updatedAt": "2026-04-09",
+    "entries": [
+      {
+        "id": "handoff-2026-04-09-003",
+        "type": "feature",
+        "title": "xlink can validate xbridge compose payloads",
+        "date": "2026.04.08 오후 9:11",
+        "status": "done",
+        "summary": "xlink handoff에서 Xbridge compose 계약 검증을 직접 호출하고 conversation에 결과를 남길 수 있게 했다.",
+        "details": [
+          "handoff payload를 Xbridge validate_external_compose_input에 전달하는 xbridge-validate route를 추가했다.",
+          "CLI validate-xbridge-compose 명령으로 같은 흐름을 로컬에서 바로 사용할 수 있다.",
+          "실제 handoff를 생성해 dropped intent warning과 validation summary note가 conversation에 남는 것을 확인했다."
+        ],
+        "tags": [
+          "xlink",
+          "xbridge",
+          "validation",
+          "mailbox"
+        ],
+        "files": [
+          "xlink/src/xbridge-validator.js",
+          "xlink/src/routes/handoffs.js",
+          "xlink/src/cli.js",
+          "xlink/tests/xbridge-validator.test.js",
+          "xlink/README.md"
+        ],
+        "commit": "",
+        "version": "0.1.0",
+        "codeSnippets": [
+          {
+            "file": "xlink/src/routes/handoffs.js",
+            "label": "handoff xbridge validate route",
+            "language": "js",
+            "code": "if (request.method === \"POST\" && pathParts[2] === \"xbridge-validate\") { const handoff = await store.getById(id); const validationResult = await validateXbridgeComposePayload(body.payload ?? handoff.payload ?? {}, { baseUrl: body.baseUrl }); ... }"
+          }
+        ]
+      },
+      {
+        "id": "handoff-2026-04-08-018",
+        "type": "feature",
+        "title": "external compose input validation added",
+        "date": "08 April, 2026",
+        "status": "done",
+        "summary": "외부 분석기 payload를 compose 전에 검사하는 validate_external_compose_input 경로를 추가했다.",
+        "details": [
+          "intentSections와 referenceAnalysis 입력을 계약 기준으로 정규화하고 오류와 경고를 함께 반환한다.",
+          "외부 에이전트가 dropped entry, missing parentId, missing intent section을 compose 전에 바로 확인할 수 있다.",
+          "HTTP /api/validate-external-compose-input 과 MCP validate_external_compose_input 으로 동일하게 쓸 수 있다."
+        ],
+        "tags": [
+          "xbridge",
+          "contract",
+          "validation",
+          "compose"
+        ],
+        "files": [
+          "src/validate-external-compose-input.js",
+          "src/server.js",
+          "tests/validate-external-compose-input.test.js",
+          "docs/authoring/external-analyzer-compose-contract.md",
+          "README.md"
+        ],
+        "commit": "03afa91",
+        "version": "0.2.0",
+        "codeSnippets": [
+          {
+            "file": "src/validate-external-compose-input.js",
+            "label": "validation result shape",
+            "language": "js",
+            "code": "return { ok: errors.length === 0, canCompose: errors.length === 0, errors, warnings, normalizedInput, resolved: { source: resolved.source, sectionCount: normalizeArray(resolved.sections).length, sections: resolved.sections } };"
+          }
+        ]
+      },
+      {
+        "id": "handoff-2026-04-08-017",
+        "type": "feature",
+        "title": "external analyzer compose contract added",
+        "date": "08 April, 2026",
+        "status": "done",
+        "summary": "Defined and implemented a formal compose contract for external analyzers so referenceAnalysis and intentSections can be normalized and consumed consistently by Xbridge.",
+        "details": [
+          "desktop SaaS dashboard shell을 더 짧은 schema로 만들 수 있게 됐다.",
+          "Agent_skill_test 세션으로 실제 smoke 요청을 보내 생성 경로를 확인했다."
+        ],
+        "tags": [
+          "xbridge",
+          "contract",
+          "external-analyzer",
+          "ds-aware"
+        ],
+        "files": [
+          "src/external-analyzer-contract.js",
+          "src/compose-screen-from-intents.js",
+          "docs/authoring/external-analyzer-compose-contract.md"
+        ],
+        "commit": "pending",
+        "version": "0.2.0",
+        "codeSnippets": [
+          {
+            "file": "src/build-layout.js",
+            "label": "dashboard-board preset",
+            "language": "js",
+            "code": "// 핵심 변경 부분을 5~25줄 정도로 넣는다."
+          }
+        ]
+      },
+      {
+        "id": "handoff-2026-04-08-016",
+        "type": "feature",
+        "title": "compose now accepts intent sections directly from external analyzers",
+        "date": "08 April, 2026",
+        "status": "done",
+        "summary": "Updated compose_screen_from_intents so external analyzers can pass intentSections directly at the top level or inside referenceAnalysis without an extra conversion step.",
+        "details": [
+          "desktop SaaS dashboard shell을 더 짧은 schema로 만들 수 있게 됐다.",
+          "Agent_skill_test 세션으로 실제 smoke 요청을 보내 생성 경로를 확인했다."
+        ],
+        "tags": [
+          "xbridge",
+          "compose-screen-from-intents",
+          "intent-sections",
+          "ds-aware"
+        ],
+        "files": [
+          "src/compose-screen-from-intents.js",
+          "src/server.js",
+          "README.md"
+        ],
+        "commit": "pending",
+        "version": "0.2.0",
+        "codeSnippets": [
+          {
+            "file": "src/build-layout.js",
+            "label": "dashboard-board preset",
+            "language": "js",
+            "code": "// 핵심 변경 부분을 5~25줄 정도로 넣는다."
+          }
+        ]
+      },
+      {
+        "id": "handoff-2026-04-08-015",
+        "type": "feature",
+        "title": "single-call fragment compose verified across four fragment types",
+        "date": "08 April, 2026",
+        "status": "done",
+        "summary": "Verified that analyze_selection_to_compose works end-to-end for sidebar, header, actions, and table fragments in the live bridge runtime.",
+        "details": [
+          "desktop SaaS dashboard shell을 더 짧은 schema로 만들 수 있게 됐다.",
+          "Agent_skill_test 세션으로 실제 smoke 요청을 보내 생성 경로를 확인했다."
+        ],
+        "tags": [
+          "xbridge",
+          "analyze-selection-to-compose",
+          "fragments",
+          "smoke"
+        ],
+        "files": [
+          "src/analyze-selection-to-compose.js",
+          "src/analyze-reference-selection.js",
+          "src/server.js"
+        ],
+        "commit": "pending",
+        "version": "0.2.0",
+        "codeSnippets": [
+          {
+            "file": "src/build-layout.js",
+            "label": "dashboard-board preset",
+            "language": "js",
+            "code": "// 핵심 변경 부분을 5~25줄 정도로 넣는다."
+          }
+        ]
+      },
+      {
+        "id": "handoff-2026-04-08-014",
+        "type": "feature",
+        "title": "selection-to-compose flow now runs in one call",
+        "date": "08 April, 2026",
+        "status": "done",
+        "summary": "Added analyze_selection_to_compose so a selected reference fragment can be analyzed and composed into a DS-aware screen in a single bridge call.",
+        "details": [
+          "desktop SaaS dashboard shell을 더 짧은 schema로 만들 수 있게 됐다.",
+          "Agent_skill_test 세션으로 실제 smoke 요청을 보내 생성 경로를 확인했다."
+        ],
+        "tags": [
+          "xbridge",
+          "analyze-selection-to-compose",
+          "ds-aware",
+          "smoke"
+        ],
+        "files": [
+          "src/analyze-selection-to-compose.js",
+          "src/server.js",
+          "README.md"
+        ],
+        "commit": "pending",
+        "version": "0.2.0",
+        "codeSnippets": [
+          {
+            "file": "src/build-layout.js",
+            "label": "dashboard-board preset",
+            "language": "js",
+            "code": "// 핵심 변경 부분을 5~25줄 정도로 넣는다."
+          }
+        ]
+      },
+      {
+        "id": "handoff-2026-04-08-013",
+        "type": "feature",
+        "title": "fragment analysis heuristics verified for sidebar header actions and table",
+        "date": "08 April, 2026",
+        "status": "done",
+        "summary": "Verified live analyze_reference_selection heuristics for sidebar, header, actions, and table-like fragments so partial screen selections can flow into DS-aware compose more reliably.",
+        "details": [
+          "desktop SaaS dashboard shell을 더 짧은 schema로 만들 수 있게 됐다.",
+          "Agent_skill_test 세션으로 실제 smoke 요청을 보내 생성 경로를 확인했다."
+        ],
+        "tags": [
+          "xbridge",
+          "analyze-reference-selection",
+          "fragments",
+          "smoke"
+        ],
+        "files": [
+          "src/analyze-reference-selection.js",
+          "tests/analyze-reference-selection.test.js"
+        ],
+        "commit": "pending",
+        "version": "0.2.0",
+        "codeSnippets": [
+          {
+            "file": "src/build-layout.js",
+            "label": "dashboard-board preset",
+            "language": "js",
+            "code": "// 핵심 변경 부분을 5~25줄 정도로 넣는다."
+          }
+        ]
+      },
+      {
+        "id": "handoff-2026-04-08-012",
+        "type": "feature",
+        "title": "analyze reference selection now detects screen fragments",
+        "date": "08 April, 2026",
+        "status": "done",
+        "summary": "Improved analyze_reference_selection so narrow rails and named shells like sidebar-shell are classified as sidebar fragments instead of generic mobile detail drafts.",
+        "details": [
+          "desktop SaaS dashboard shell을 더 짧은 schema로 만들 수 있게 됐다.",
+          "Agent_skill_test 세션으로 실제 smoke 요청을 보내 생성 경로를 확인했다."
+        ],
+        "tags": [
+          "xbridge",
+          "analyze-reference-selection",
+          "fragments",
+          "ds-aware"
+        ],
+        "files": [
+          "src/analyze-reference-selection.js",
+          "tests/analyze-reference-selection.test.js"
+        ],
+        "commit": "pending",
+        "version": "0.2.0",
+        "codeSnippets": [
+          {
+            "file": "src/build-layout.js",
+            "label": "dashboard-board preset",
+            "language": "js",
+            "code": "// 핵심 변경 부분을 5~25줄 정도로 넣는다."
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "xlink-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MCP adapter for the xlink coordinator",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js"
+  }
+}

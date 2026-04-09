@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XLink Operations Dashboard</title>
+  <style>
+    @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
+
+    :root {
+      --bg: #f4ede2;
+      --bg-strong: #fbf7ef;
+      --panel: rgba(255, 251, 245, 0.84);
+      --panel-strong: rgba(255, 253, 249, 0.92);
+      --ink: #1f2a2c;
+      --muted: #5f6761;
+      --line: rgba(42, 58, 61, 0.12);
+      --accent: #9a4f38;
+      --accent-deep: #6d3221;
+      --gold: #aa8131;
+      --green: #648168;
+      --purple: #7b6077;
+      --shadow: 0 18px 40px rgba(62, 43, 23, 0.1);
+      --radius: 24px;
+      --radius-sm: 18px;
+      --max: 1280px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(170, 129, 49, 0.13), transparent 26%),
+        radial-gradient(circle at 82% 10%, rgba(154, 79, 56, 0.12), transparent 18%),
+        linear-gradient(180deg, #f8f3ea 0%, var(--bg) 52%, #efe4d4 100%);
+    }
+
+    .page {
+      width: min(calc(100% - 32px), var(--max));
+      margin: 0 auto;
+      padding: 28px 0 56px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
+    .hero {
+      padding: 30px;
+      margin-bottom: 22px;
+      background: var(--bg-strong);
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 250, 241, 0.92);
+      border: 1px solid rgba(154, 79, 56, 0.18);
+      color: var(--accent-deep);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 { margin: 0; letter-spacing: -0.03em; }
+    h1 {
+      margin-top: 14px;
+      font-size: clamp(2.8rem, 6vw, 5rem);
+      line-height: 0.96;
+    }
+
+    p { margin: 0; line-height: 1.6; color: var(--muted); }
+
+    .intro {
+      margin-top: 14px;
+      max-width: 70ch;
+      font-size: 1.03rem;
+    }
+
+    .stats, .grid, .channel-grid, .devlog-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .stats {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 24px;
+    }
+
+    .stat, .card, .list-card {
+      background: var(--panel-strong);
+      border: 1px solid rgba(42, 58, 61, 0.08);
+      border-radius: var(--radius-sm);
+    }
+
+    .stat {
+      padding: 16px;
+      cursor: pointer;
+      transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+    }
+
+    .stat:hover {
+      transform: translateY(-2px);
+      border-color: rgba(154, 79, 56, 0.2);
+    }
+
+    .stat.active {
+      background: rgba(154, 79, 56, 0.12);
+      border-color: rgba(154, 79, 56, 0.24);
+    }
+
+    .stat.changed strong {
+      animation: stat-pop 700ms ease;
+    }
+
+    .stat strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--accent-deep);
+      font-size: 1.7rem;
+      font-weight: 900;
+    }
+
+    .grid {
+      grid-template-columns: 1.1fr 0.9fr;
+      margin-top: 22px;
+    }
+
+    .flow-board {
+      margin-top: 22px;
+      padding: 24px;
+    }
+
+    .flow-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+      align-items: stretch;
+    }
+
+    .flow-card {
+      position: relative;
+      padding: 18px;
+      min-height: 148px;
+      background: var(--panel-strong);
+      border: 1px solid rgba(42, 58, 61, 0.08);
+      border-radius: var(--radius-sm);
+    }
+
+    .flow-card::after {
+      content: "→";
+      position: absolute;
+      right: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: rgba(255, 250, 241, 0.96);
+      border: 1px solid rgba(154, 79, 56, 0.18);
+      color: var(--accent-deep);
+      font-weight: 900;
+    }
+
+    .flow-card:last-child::after {
+      display: none;
+    }
+
+    .flow-step {
+      display: inline-flex;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(154, 79, 56, 0.1);
+      color: var(--accent-deep);
+      font-size: 0.77rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .flow-card h3 {
+      margin-top: 12px;
+      font-size: 1.15rem;
+    }
+
+    .flow-card p {
+      margin-top: 8px;
+      font-size: 0.94rem;
+    }
+
+    .flow-foot {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .section {
+      padding: 24px;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    .section-head h2 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      line-height: 1;
+    }
+
+    .section-head.stack {
+      display: grid;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .search-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .search {
+      flex: 1 1 260px;
+      min-width: 220px;
+      appearance: none;
+      border: 1px solid rgba(42, 58, 61, 0.12);
+      background: rgba(255, 253, 249, 0.88);
+      color: var(--ink);
+      font: inherit;
+      font-size: 0.94rem;
+      padding: 12px 14px;
+      border-radius: 16px;
+      outline: none;
+    }
+
+    .search:focus {
+      border-color: rgba(154, 79, 56, 0.32);
+      box-shadow: 0 0 0 4px rgba(154, 79, 56, 0.08);
+    }
+
+    .pill {
+      appearance: none;
+      border: 1px solid rgba(42, 58, 61, 0.12);
+      background: rgba(255, 253, 249, 0.88);
+      color: var(--ink);
+      font: inherit;
+      font-size: 0.88rem;
+      font-weight: 700;
+      padding: 9px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+    }
+
+    .pill:hover {
+      transform: translateY(-1px);
+      border-color: rgba(154, 79, 56, 0.22);
+    }
+
+    .pill.active {
+      background: var(--accent-deep);
+      color: white;
+      border-color: transparent;
+    }
+
+    .list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .list-card {
+      padding: 16px;
+    }
+
+    .title-row, .meta-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .title-row strong {
+      font-size: 1rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      background: rgba(31, 42, 44, 0.06);
+      color: var(--ink);
+    }
+
+    .pending { background: rgba(170, 129, 49, 0.16); color: #6d5425; }
+    .claimed { background: rgba(100, 129, 104, 0.18); color: #415441; }
+    .completed { background: rgba(101, 171, 131, 0.18); color: #21513b; }
+    .blocked { background: rgba(154, 79, 56, 0.16); color: #8c431f; }
+    .rejected { background: rgba(123, 96, 119, 0.16); color: #6c4957; }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .chip {
+      display: inline-flex;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(31, 42, 44, 0.06);
+      font-size: 0.8rem;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .channel-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .channel-section-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      padding: 16px;
+    }
+
+    .card details {
+      margin-top: 10px;
+    }
+
+    .card summary {
+      cursor: pointer;
+      color: var(--accent-deep);
+      font-weight: 800;
+    }
+
+    .card h3 {
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+
+    .card .value {
+      margin-top: 8px;
+      font-size: 1.6rem;
+      color: var(--accent-deep);
+      font-weight: 900;
+    }
+
+    .empty {
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 253, 249, 0.72);
+      border: 1px dashed rgba(42, 58, 61, 0.16);
+    }
+
+    .footer {
+      margin-top: 22px;
+      padding: 18px 20px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, rgba(154, 79, 56, 0.08), rgba(170, 129, 49, 0.08));
+      border: 1px solid rgba(154, 79, 56, 0.12);
+    }
+
+    .timeline {
+      display: grid;
+      gap: 12px;
+    }
+
+    .timeline-card {
+      position: relative;
+      padding: 16px 16px 16px 22px;
+      border-radius: var(--radius-sm);
+      background: var(--panel-strong);
+      border: 1px solid rgba(42, 58, 61, 0.08);
+    }
+
+    .timeline-card::before {
+      content: "";
+      position: absolute;
+      left: 10px;
+      top: 18px;
+      bottom: 18px;
+      width: 2px;
+      background: rgba(154, 79, 56, 0.16);
+    }
+
+    .timeline-card::after {
+      content: "";
+      position: absolute;
+      left: 5px;
+      top: 18px;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: var(--accent-deep);
+      box-shadow: 0 0 0 4px rgba(154, 79, 56, 0.12);
+    }
+
+    .timeline-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .status-toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      max-width: 360px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(31, 42, 44, 0.92);
+      color: white;
+      box-shadow: 0 18px 40px rgba(20, 16, 12, 0.18);
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+      z-index: 30;
+    }
+
+    .status-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .drawer {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: stretch;
+      justify-content: flex-end;
+      z-index: 20;
+    }
+
+    .drawer.open {
+      display: flex;
+    }
+
+    .drawer-backdrop {
+      flex: 1;
+      background: rgba(22, 18, 14, 0.36);
+      backdrop-filter: blur(4px);
+    }
+
+    .drawer-panel {
+      width: min(520px, 100%);
+      padding: 24px;
+      background: rgba(255, 251, 245, 0.98);
+      border-left: 1px solid rgba(42, 58, 61, 0.12);
+      box-shadow: -18px 0 40px rgba(39, 29, 20, 0.14);
+      overflow: auto;
+    }
+
+    .drawer-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .drawer-title {
+      font-size: 1.4rem;
+      line-height: 1.1;
+    }
+
+    .icon-button {
+      appearance: none;
+      border: 0;
+      background: rgba(31, 42, 44, 0.08);
+      color: var(--ink);
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      font: inherit;
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+
+    .detail-group {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .detail-card {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255, 253, 249, 0.92);
+      border: 1px solid rgba(42, 58, 61, 0.08);
+    }
+
+    .detail-card strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .detail-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .detail-list p {
+      color: var(--ink);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: var(--accent-deep);
+      color: white;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(109, 50, 33, 0.18);
+    }
+
+    .button.secondary {
+      background: rgba(31, 42, 44, 0.08);
+      color: var(--ink);
+      box-shadow: none;
+    }
+
+    .auto-refresh {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255, 250, 241, 0.92);
+      border: 1px solid rgba(42, 58, 61, 0.12);
+      color: var(--ink);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .auto-refresh input {
+      accent-color: var(--accent-deep);
+    }
+
+    .pulse {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--green);
+      box-shadow: 0 0 0 0 rgba(100, 129, 104, 0.45);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(100, 129, 104, 0.45); }
+      70% { box-shadow: 0 0 0 10px rgba(100, 129, 104, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(100, 129, 104, 0); }
+    }
+
+    @keyframes stat-pop {
+      0% { transform: scale(1); color: var(--accent-deep); }
+      45% { transform: scale(1.14); color: #c45f3c; }
+      100% { transform: scale(1); color: var(--accent-deep); }
+    }
+
+    @media (max-width: 980px) {
+      .stats, .grid, .channel-grid, .flow-grid, .channel-section-grid { grid-template-columns: 1fr; }
+      .flow-card::after { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="panel hero">
+      <div class="hero-top">
+        <div>
+          <span class="eyebrow">Operations Dashboard</span>
+          <h1>XLink 운영 현황</h1>
+        </div>
+        <div class="toolbar">
+          <label class="auto-refresh">
+            <span class="pulse"></span>
+            <input type="checkbox" id="auto-refresh" checked>
+            15초 자동 새로고침
+          </label>
+          <button class="button" id="dashboard-rebuild" type="button">dashboard.json 재빌드</button>
+          <button class="button secondary" id="rebuild-link" type="button">데이터 새로 읽기</button>
+        </div>
+      </div>
+      <p class="intro">SQLite handoff store, channel projection stores, 그리고 devlog ingest 결과를 한 화면에서 보는 운영 대시보드입니다. 빌드된 snapshot을 읽고 자동으로 다시 로드합니다.</p>
+      <div class="stats" id="stats"></div>
+    </section>
+
+    <section class="panel flow-board">
+      <div class="section-head">
+        <div><h2>Flow Board</h2></div>
+        <p id="flow-meta"></p>
+      </div>
+      <div class="flow-grid" id="flow-grid"></div>
+      <div class="flow-foot" id="flow-foot"></div>
+    </section>
+
+    <section class="grid">
+      <article class="panel section">
+        <div class="section-head stack">
+          <div class="title-row">
+            <h2>Recent Handoffs</h2>
+            <p id="handoff-meta"></p>
+          </div>
+          <div class="search-row">
+            <input class="search" id="handoff-search" type="search" placeholder="title, summary, tag, agent로 검색">
+            <button class="button secondary" id="clear-search" type="button">검색 초기화</button>
+          </div>
+          <div class="filters" id="status-filters"></div>
+          <div class="filters" id="channel-filters"></div>
+        </div>
+        <div class="list" id="handoff-list"></div>
+      </article>
+
+      <aside class="panel section">
+        <div class="section-head">
+          <div><h2>Channel Stores</h2></div>
+          <p>projection ingest 결과</p>
+        </div>
+        <div class="channel-grid" id="channel-grid"></div>
+      </aside>
+    </section>
+
+    <section class="grid">
+      <article class="panel section">
+        <div class="section-head">
+          <div><h2>Devlog</h2></div>
+          <p id="devlog-meta"></p>
+        </div>
+        <div class="search-row" style="margin-bottom: 16px;">
+          <input class="search" id="devlog-search" type="search" placeholder="devlog title, summary, tag 검색">
+          <button class="button secondary" id="clear-devlog-search" type="button">검색 초기화</button>
+        </div>
+        <div class="list" id="devlog-list"></div>
+      </article>
+
+      <aside class="panel section">
+        <div class="section-head">
+          <div><h2>Environment</h2></div>
+          <p>snapshot 기준 정보</p>
+        </div>
+        <div class="list" id="env-list"></div>
+      </aside>
+    </section>
+
+    <section class="panel section">
+      <div class="section-head stack">
+        <div class="title-row">
+          <h2>Recent Timeline</h2>
+          <p>handoff message 기준 이벤트</p>
+        </div>
+        <div class="filters" id="timeline-kind-filters"></div>
+      </div>
+      <div class="timeline" id="timeline-list"></div>
+    </section>
+
+    <section class="panel section">
+      <div class="section-head">
+        <div><h2>Channels</h2></div>
+        <p>채널별 projection preview</p>
+      </div>
+      <div class="channel-section-grid" id="channel-sections"></div>
+    </section>
+
+    <div class="footer" id="footer"></div>
+  </main>
+
+  <aside class="drawer" id="handoff-drawer" aria-hidden="true">
+    <div class="drawer-backdrop" id="drawer-backdrop"></div>
+    <section class="drawer-panel">
+      <div class="drawer-head">
+        <div>
+          <p class="eyebrow">Handoff Detail</p>
+          <h2 class="drawer-title" id="drawer-title">선택된 handoff 없음</h2>
+        </div>
+        <button class="icon-button" id="drawer-close" type="button" aria-label="상세 닫기">×</button>
+      </div>
+      <div id="drawer-body"></div>
+    </section>
+  </aside>
+
+  <div class="status-toast" id="status-toast"></div>
+
+  <script>
+    let refreshTimer = null;
+    let toastTimer = null;
+    const filters = {
+      status: "all",
+      channel: "all",
+      query: "",
+      devlogQuery: "",
+      timelineKind: "all"
+    };
+    let latestData = null;
+    let previousSnapshot = null;
+    const statusClass = (value) => value || "";
+
+    function chip(text) {
+      return `<span class="chip">${text}</span>`;
+    }
+
+    function safe(value) {
+      return value == null ? "" : String(value);
+    }
+
+    function formatDate(value) {
+      if (!value) {
+        return "n/a";
+      }
+
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) {
+        return safe(value);
+      }
+
+      return new Intl.DateTimeFormat("ko-KR", {
+        dateStyle: "medium",
+        timeStyle: "medium"
+      }).format(parsed);
+    }
+
+    function buildFlowCards(data) {
+      const total = data.summary.totalHandoffs || 0;
+      const completed = data.summary.byStatus.completed || 0;
+      const blocked = data.summary.byStatus.blocked || 0;
+      const rejected = data.summary.byStatus.rejected || 0;
+      const stores = data.summary.channelStores || 0;
+
+      return [
+        {
+          step: "Step 1",
+          title: "Bridge Agent 작업 완료",
+          body: "브리지 에이전트가 payload, artifact, message를 handoff로 정리합니다.",
+          chips: [chip(`handoffs:${total}`), chip(`backend:${data.backend}`)]
+        },
+        {
+          step: "Step 2",
+          title: "Coordinator 저장",
+          body: "SQLite store에 상태와 메시지를 기록하고, 이후 claim 가능한 큐로 둡니다.",
+          chips: [chip(`completed:${completed}`), chip(`blocked:${blocked}`)]
+        },
+        {
+          step: "Step 3",
+          title: "Projection 생성",
+          body: "devlog, docs, review, figma 같은 채널 소비 형식으로 변환합니다.",
+          chips: [chip(`stores:${stores}`), ...Object.keys(data.summary.byChannel || {}).map((key) => chip(key)).slice(0, 3)]
+        },
+        {
+          step: "Step 4",
+          title: "Consumer Ingest",
+          body: "devlog 파일이나 channel store에 upsert 되고, 다운스트림 소비자가 읽습니다.",
+          chips: [chip(`devlog:${data.summary.devlogEntries || 0}`), chip(`rejected:${rejected}`)]
+        },
+        {
+          step: "Step 5",
+          title: "Sync 완료",
+          body: "sync workflow는 claim, ingest, complete를 이어서 처리하고 운영 화면에 반영됩니다.",
+          chips: [chip(`generated:${formatDate(data.generatedAt)}`)]
+        }
+      ];
+    }
+
+    function renderFlow(data) {
+      const cards = buildFlowCards(data);
+      document.getElementById("flow-meta").textContent = `snapshot: ${formatDate(data.generatedAt)}`;
+      document.getElementById("flow-grid").innerHTML = cards.map((card) => `
+        <div class="flow-card">
+          <span class="flow-step">${card.step}</span>
+          <h3>${card.title}</h3>
+          <p>${card.body}</p>
+          <div class="chips">${card.chips.join("")}</div>
+        </div>
+      `).join("");
+
+      document.getElementById("flow-foot").innerHTML = [
+        chip(`pending:${data.summary.byStatus.pending || 0}`),
+        chip(`claimed:${data.summary.byStatus.claimed || 0}`),
+        chip(`completed:${data.summary.byStatus.completed || 0}`),
+        chip(`blocked:${data.summary.byStatus.blocked || 0}`),
+        chip(`rejected:${data.summary.byStatus.rejected || 0}`)
+      ].join("");
+    }
+
+    function renderPills(containerId, items, activeValue, key) {
+      document.getElementById(containerId).innerHTML = items.map((item) => `
+        <button class="pill ${item.value === activeValue ? "active" : ""}" data-filter-key="${key}" data-filter-value="${item.value}" type="button">
+          ${item.label}
+        </button>
+      `).join("");
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("status-toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      if (toastTimer) {
+        clearTimeout(toastTimer);
+      }
+      toastTimer = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2600);
+    }
+
+    function getChangedStatuses(data) {
+      if (!previousSnapshot?.summary?.byStatus) {
+        return new Set();
+      }
+
+      return new Set(Object.keys(data.summary.byStatus || {}).filter((key) => (
+        (previousSnapshot.summary.byStatus?.[key] || 0) !== (data.summary.byStatus?.[key] || 0)
+      )));
+    }
+
+    function applyFilters(handoffs) {
+      return handoffs.filter((handoff) => {
+        const matchStatus = filters.status === "all" || handoff.status === filters.status;
+        const matchChannel = filters.channel === "all" || handoff.channel === filters.channel;
+        const haystack = [
+          handoff.title,
+          handoff.sourceAgent,
+          handoff.targetAgent,
+          handoff.payload?.title,
+          handoff.payload?.summary,
+          ...(handoff.payload?.tags || []),
+          ...(handoff.messages || []).map((message) => message.body)
+        ].filter(Boolean).join(" ").toLowerCase();
+        const matchQuery = !filters.query || haystack.includes(filters.query.toLowerCase());
+        return matchStatus && matchChannel && matchQuery;
+      });
+    }
+
+    function renderTimeline(handoffs) {
+      const items = handoffs.flatMap((handoff) => (handoff.messages || []).map((message) => ({
+        handoffId: handoff.id,
+        handoffTitle: handoff.title,
+        handoffStatus: handoff.status,
+        handoffChannel: handoff.channel,
+        author: message.author,
+        body: message.body,
+        kind: message.kind,
+        createdAt: message.createdAt
+      }))).filter((item) => filters.timelineKind === "all" || (item.kind || "message") === filters.timelineKind)
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        .slice(0, 10);
+
+      document.getElementById("timeline-list").innerHTML = items.map((item) => `
+        <div class="timeline-card">
+          <div class="timeline-meta">
+            <span class="badge ${statusClass(item.handoffStatus)}">${safe(item.handoffStatus)}</span>
+            <span class="badge">${safe(item.kind || "message")}</span>
+            <span class="chip">${safe(item.handoffChannel)}</span>
+            <span class="chip">${safe(item.author || "unknown")}</span>
+          </div>
+          <strong>${safe(item.handoffTitle)}</strong>
+          <p>${safe(item.body)}</p>
+          <div class="chips">
+            ${chip(`handoff:${item.handoffId}`)}
+            ${chip(`at:${formatDate(item.createdAt)}`)}
+          </div>
+        </div>
+      `).join("") || `<div class="empty">표시할 timeline 이벤트가 없습니다.</div>`;
+    }
+
+    function renderChannelSections(channelStores) {
+      document.getElementById("channel-sections").innerHTML = channelStores.map((store) => `
+        <article class="card">
+          <div class="title-row">
+            <h3>${safe(store.channel)}</h3>
+            <span class="badge">${safe(store.entries)} entries</span>
+          </div>
+          <p>${safe(store.filePath)}</p>
+          <div class="chips">
+            ${chip(`updated:${safe(store.updatedAt || "n/a")}`)}
+            ${(store.sampleKinds || []).map((item) => chip(item)).join("")}
+          </div>
+          <div class="detail-group">
+            ${((store.previewEntries || []).map((entry) => `
+              <div class="detail-card">
+                <strong>${safe(entry.title || entry.data?.title || entry.kind || "preview")}</strong>
+                <p>${safe(entry.summary || entry.data?.summary || entry.data?.payload?.summary || entry.kind || "projection entry")}</p>
+              </div>
+            `).join("")) || `<div class="detail-card"><p>미리보기 entry가 없습니다.</p></div>`}
+          </div>
+        </article>
+      `).join("") || `<div class="empty">채널별 projection preview가 없습니다.</div>`;
+    }
+
+    function renderDevlog(entries) {
+      const query = filters.devlogQuery.toLowerCase();
+      const filtered = entries.filter((entry) => {
+        const haystack = [
+          entry.title,
+          entry.summary,
+          ...(entry.tags || []),
+          ...(entry.details || [])
+        ].filter(Boolean).join(" ").toLowerCase();
+        return !query || haystack.includes(query);
+      });
+
+      document.getElementById("devlog-meta").textContent = latestData?.devlog?.updatedAt
+        ? `updated: ${latestData.devlog.updatedAt} / visible: ${filtered.length}`
+        : "devlog data unavailable";
+      document.getElementById("devlog-search").value = filters.devlogQuery;
+      document.getElementById("devlog-list").innerHTML = filtered.map((entry) => `
+        <div class="list-card">
+          <div class="title-row">
+            <strong>${safe(entry.title)}</strong>
+            <span class="badge">${safe(entry.type || "entry")}</span>
+          </div>
+          <p>${safe(entry.summary || (entry.details || []).join(" "))}</p>
+          <div class="chips">
+            ${(entry.tags || []).slice(0, 5).map((tag) => chip(tag)).join("")}
+          </div>
+        </div>
+      `).join("") || `<div class="empty">devlog preview가 없습니다.</div>`;
+    }
+
+    function openDrawer(handoffId) {
+      const handoff = (latestData?.recentHandoffs || []).find((item) => item.id === handoffId);
+      if (!handoff) {
+        return;
+      }
+
+      document.getElementById("drawer-title").textContent = safe(handoff.title);
+      document.getElementById("drawer-body").innerHTML = `
+        <div class="chips">
+          ${chip(`status:${safe(handoff.status)}`)}
+          ${chip(`channel:${safe(handoff.channel)}`)}
+          ${chip(`source:${safe(handoff.sourceAgent)}`)}
+          ${chip(`target:${safe(handoff.targetAgent)}`)}
+          ${chip(`priority:${safe(handoff.priority)}`)}
+        </div>
+        <div class="detail-group">
+          <div class="detail-card">
+            <strong>Summary</strong>
+            <p>${safe(handoff.payload?.summary || handoff.payload?.title || handoff.title)}</p>
+          </div>
+          <div class="detail-card">
+            <strong>Payload Details</strong>
+            <div class="detail-list">
+              ${((handoff.payload?.details || []).map((item) => `<p>${safe(item)}</p>`).join("")) || "<p>상세 항목이 없습니다.</p>"}
+            </div>
+          </div>
+          <div class="detail-card">
+            <strong>Artifacts</strong>
+            <div class="detail-list">
+              ${((handoff.artifacts || []).map((artifact) => `<p>${safe(artifact.type)} / ${safe(artifact.label || artifact.path || "artifact")}</p>`).join("")) || "<p>artifact가 없습니다.</p>"}
+            </div>
+          </div>
+          <div class="detail-card">
+            <strong>Messages</strong>
+            <div class="detail-list">
+              ${((handoff.messages || []).map((message) => `<p>${safe(message.kind || "message")} · ${safe(message.author || "unknown")} · ${safe(message.body)}</p>`).join("")) || "<p>message가 없습니다.</p>"}
+            </div>
+          </div>
+        </div>
+      `;
+
+      const drawer = document.getElementById("handoff-drawer");
+      drawer.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
+    }
+
+    function closeDrawer() {
+      const drawer = document.getElementById("handoff-drawer");
+      drawer.classList.remove("open");
+      drawer.setAttribute("aria-hidden", "true");
+    }
+
+    async function load() {
+      const response = await fetch(`./data/dashboard.json?t=${Date.now()}`);
+      const data = await response.json();
+      latestData = data;
+      renderFlow(data);
+      const changedStatuses = getChangedStatuses(data);
+
+      const statusItems = [
+        { value: "all", label: "All Status" },
+        { value: "pending", label: "Pending" },
+        { value: "claimed", label: "Claimed" },
+        { value: "completed", label: "Completed" },
+        { value: "blocked", label: "Blocked" },
+        { value: "rejected", label: "Rejected" }
+      ];
+      const channelItems = [
+        { value: "all", label: "All Channels" },
+        ...Object.keys(data.summary.byChannel || {}).map((item) => ({
+          value: item,
+          label: item
+        }))
+      ];
+      const timelineKindItems = [
+        { value: "all", label: "All Messages" },
+        ...Array.from(new Set((data.recentHandoffs || []).flatMap((handoff) =>
+          (handoff.messages || []).map((message) => message.kind || "message")
+        ))).map((item) => ({ value: item, label: item }))
+      ];
+      renderPills("status-filters", statusItems, filters.status, "status");
+      renderPills("channel-filters", channelItems, filters.channel, "channel");
+      renderPills("timeline-kind-filters", timelineKindItems, filters.timelineKind, "timelineKind");
+      const filteredHandoffs = applyFilters(data.recentHandoffs || []);
+
+      const stats = [
+        ["Total Handoffs", data.summary.totalHandoffs, "all"],
+        ["Completed", data.summary.byStatus.completed || 0, "completed"],
+        ["Pending", data.summary.byStatus.pending || 0, "pending"],
+        ["Blocked", data.summary.byStatus.blocked || 0, "blocked"]
+      ];
+
+      document.getElementById("stats").innerHTML = stats.map(([label, value, status]) => `
+        <button class="stat ${filters.status === status ? "active" : ""} ${changedStatuses.has(status) ? "changed" : ""}" data-stat-status="${status}" type="button">
+          <strong>${value}</strong>
+          <p>${label}</p>
+        </button>
+      `).join("");
+
+      document.getElementById("handoff-meta").textContent = `backend: ${data.backend} / visible: ${filteredHandoffs.length}`;
+      document.getElementById("handoff-search").value = filters.query;
+      document.getElementById("handoff-list").innerHTML = filteredHandoffs.map((handoff) => `
+        <div class="list-card" data-handoff-id="${safe(handoff.id)}" role="button" tabindex="0">
+          <div class="title-row">
+            <strong>${safe(handoff.title)}</strong>
+            <span class="badge ${statusClass(handoff.status)}">${safe(handoff.status)}</span>
+          </div>
+          <p>${safe(handoff.payload.summary || handoff.title)}</p>
+          <div class="chips">
+            ${chip(`channel:${handoff.channel}`)}
+            ${chip(`source:${handoff.sourceAgent}`)}
+            ${chip(`target:${handoff.targetAgent}`)}
+            ${chip(`priority:${handoff.priority}`)}
+          </div>
+        </div>
+      `).join("") || `<div class="empty">handoff가 없습니다.</div>`;
+      renderTimeline(filteredHandoffs);
+
+      document.getElementById("channel-grid").innerHTML = data.channelStores.map((store) => `
+        <div class="card">
+          <h3>${safe(store.channel)}</h3>
+          <p>${safe(store.filePath)}</p>
+          <div class="value">${safe(store.entries)}</div>
+          <div class="chips">
+            ${chip(`updated:${safe(store.updatedAt || "n/a")}`)}
+            ${store.sampleKinds.map((item) => chip(item)).join("")}
+          </div>
+          <details>
+            <summary>상세 보기</summary>
+            <div class="chips">
+              ${chip(`channel:${safe(store.channel)}`)}
+              ${chip(`entries:${safe(store.entries)}`)}
+              ${chip(`updated:${safe(store.updatedAt || "n/a")}`)}
+            </div>
+          </details>
+        </div>
+      `).join("") || `<div class="empty">채널 projection store가 아직 없습니다.</div>`;
+      renderChannelSections(data.channelStores || []);
+
+      renderDevlog(data.devlog?.entries || []);
+
+      const envRows = [
+        ["Generated", formatDate(data.generatedAt)],
+        ["Backend", data.backend],
+        ["Handoff Store", data.handoffDataPath],
+        ["Devlog Data", data.devlogDataPath]
+      ];
+      document.getElementById("env-list").innerHTML = envRows.map(([label, value]) => `
+        <div class="list-card">
+          <strong>${label}</strong>
+          <p>${safe(value)}</p>
+        </div>
+      `).join("");
+
+      document.getElementById("footer").innerHTML = `
+        <strong>By Channel</strong>
+        <div class="chips">
+          ${Object.entries(data.summary.byChannel).map(([key, value]) => chip(`${key}:${value}`)).join("")}
+        </div>
+      `;
+
+      document.querySelectorAll("[data-filter-key]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const key = button.dataset.filterKey;
+          filters[key] = button.dataset.filterValue;
+          load().catch((error) => {
+            console.error(error);
+          });
+        });
+      });
+
+      document.querySelectorAll("[data-stat-status]").forEach((button) => {
+        button.addEventListener("click", () => {
+          filters.status = button.dataset.statStatus;
+          load().catch((error) => {
+            console.error(error);
+          });
+        });
+      });
+
+      document.querySelectorAll("[data-handoff-id]").forEach((card) => {
+        card.addEventListener("click", () => {
+          openDrawer(card.dataset.handoffId);
+        });
+        card.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openDrawer(card.dataset.handoffId);
+          }
+        });
+      });
+
+      if (previousSnapshot && previousSnapshot.generatedAt !== data.generatedAt) {
+        const changed = Array.from(changedStatuses);
+        if (changed.length > 0) {
+          showToast(`상태 갱신 감지: ${changed.join(", ")}`);
+        } else {
+          showToast("dashboard snapshot이 갱신되었습니다.");
+        }
+      }
+
+      previousSnapshot = data;
+    }
+
+    async function rebuildDashboard() {
+      const button = document.getElementById("dashboard-rebuild");
+      button.disabled = true;
+      button.textContent = "재빌드 중...";
+
+      try {
+        const response = await fetch("http://127.0.0.1:3850/dashboard/rebuild", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: "{}"
+        });
+
+        if (!response.ok) {
+          throw new Error(`rebuild failed: ${response.status}`);
+        }
+
+        await response.json();
+        showToast("dashboard.json 재빌드 완료");
+        await load();
+      } catch (error) {
+        showToast("재빌드 호출 실패. xlink server 실행 상태를 확인해 주세요.");
+        console.error(error);
+      } finally {
+        button.disabled = false;
+        button.textContent = "dashboard.json 재빌드";
+      }
+    }
+
+    function syncAutoRefresh() {
+      const enabled = document.getElementById("auto-refresh").checked;
+      if (refreshTimer) {
+        clearInterval(refreshTimer);
+        refreshTimer = null;
+      }
+
+      if (enabled) {
+        refreshTimer = setInterval(() => {
+          load().catch((error) => {
+            console.error(error);
+          });
+        }, 15000);
+      }
+    }
+
+    document.getElementById("auto-refresh").addEventListener("change", syncAutoRefresh);
+    document.getElementById("rebuild-link").addEventListener("click", () => {
+      load().catch((error) => {
+        console.error(error);
+      });
+    });
+    document.getElementById("dashboard-rebuild").addEventListener("click", () => {
+      rebuildDashboard().catch((error) => {
+        console.error(error);
+      });
+    });
+    document.getElementById("handoff-search").addEventListener("input", (event) => {
+      filters.query = event.target.value.trim();
+      load().catch((error) => {
+        console.error(error);
+      });
+    });
+    document.getElementById("clear-search").addEventListener("click", () => {
+      filters.query = "";
+      load().catch((error) => {
+        console.error(error);
+      });
+    });
+    document.getElementById("devlog-search").addEventListener("input", (event) => {
+      filters.devlogQuery = event.target.value.trim();
+      load().catch((error) => {
+        console.error(error);
+      });
+    });
+    document.getElementById("clear-devlog-search").addEventListener("click", () => {
+      filters.devlogQuery = "";
+      load().catch((error) => {
+        console.error(error);
+      });
+    });
+    document.getElementById("drawer-close").addEventListener("click", closeDrawer);
+    document.getElementById("drawer-backdrop").addEventListener("click", closeDrawer);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeDrawer();
+      }
+    });
+
+    load().catch((error) => {
+      document.body.innerHTML = `<main class="page"><div class="panel section"><h2>Dashboard Load Failed</h2><p>${safe(error.message)}</p></div></main>`;
+    });
+    syncAutoRefresh();
+  </script>
+</body>
+</html>

@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Available Skills</title>
+  <style>
+    @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
+
+    :root {
+      --bg: #f4ede2;
+      --bg-strong: #fbf7ef;
+      --panel: rgba(255, 251, 245, 0.84);
+      --panel-strong: rgba(255, 253, 249, 0.92);
+      --ink: #1f2a2c;
+      --muted: #5f6761;
+      --line: rgba(42, 58, 61, 0.12);
+      --accent: #9a4f38;
+      --accent-soft: rgba(154, 79, 56, 0.08);
+      --green: #648168;
+      --gold: #aa8131;
+      --purple: #7b6077;
+      --radius: 24px;
+      --radius-sm: 18px;
+      --shadow: 0 18px 40px rgba(62, 43, 23, 0.1);
+      --max: 1280px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Segoe UI", sans-serif;
+      line-height: 1.5;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(170, 129, 49, 0.13), transparent 26%),
+        radial-gradient(circle at 82% 10%, rgba(154, 79, 56, 0.12), transparent 18%),
+        linear-gradient(180deg, #f8f3ea 0%, var(--bg) 52%, #efe4d4 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(122, 96, 63, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(122, 96, 63, 0.05) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 92%);
+    }
+
+    .page {
+      width: min(calc(100% - 32px), var(--max));
+      margin: 0 auto;
+      padding: 28px 0 56px;
+      position: relative;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
+    .hero {
+      padding: 30px;
+      margin-bottom: 22px;
+      background: var(--bg-strong);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 250, 241, 0.92);
+      border: 1px solid rgba(154, 79, 56, 0.2);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      line-height: 1.02;
+      letter-spacing: -0.03em;
+    }
+
+    h1 {
+      margin-top: 16px;
+      font-size: clamp(2.8rem, 6vw, 5.4rem);
+      font-weight: 900;
+      max-width: 10ch;
+    }
+
+    .intro {
+      margin-top: 18px;
+      max-width: 70ch;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 1.02rem;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .stat {
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(42, 58, 61, 0.08);
+      background: var(--panel-strong);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.7rem;
+      font-weight: 900;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    .stat span {
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 0.95rem;
+    }
+
+    .category {
+      padding: 24px;
+      margin-top: 22px;
+    }
+
+    .category-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .category-head p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 44ch;
+      line-height: 1.6;
+    }
+
+    .category h2 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 900;
+    }
+
+    .pill {
+      display: inline-flex;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.84rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .skill {
+      padding: 18px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(42, 58, 61, 0.08);
+      background: var(--panel-strong);
+      transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .skill:hover {
+      transform: translateY(-2px);
+      border-color: rgba(154, 79, 56, 0.2);
+      box-shadow: 0 12px 24px rgba(31, 42, 44, 0.06);
+    }
+
+    .skill h3 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .skill p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.58;
+      font-size: 0.95rem;
+    }
+
+    .tagline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .tag {
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: rgba(31, 42, 44, 0.06);
+      color: var(--ink);
+    }
+
+    .design .pill {
+      color: var(--accent);
+    }
+
+    .design .tag {
+      background: rgba(154, 79, 56, 0.08);
+      color: var(--accent);
+    }
+
+    .figma .pill {
+      color: var(--green);
+    }
+
+    .figma .tag {
+      background: rgba(100, 129, 104, 0.12);
+      color: var(--green);
+    }
+
+    .github .pill {
+      color: var(--gold);
+    }
+
+    .github .tag {
+      background: rgba(170, 129, 49, 0.12);
+      color: var(--gold);
+    }
+
+    .system .pill {
+      color: var(--purple);
+    }
+
+    .system .tag {
+      background: rgba(123, 96, 119, 0.12);
+      color: var(--purple);
+    }
+
+    .footer-note {
+      margin-top: 24px;
+      padding: 18px 20px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, rgba(154, 79, 56, 0.08), rgba(170, 129, 49, 0.08));
+      border: 1px solid rgba(154, 79, 56, 0.12);
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    @media (max-width: 980px) {
+      .stats,
+      .skills-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="panel hero">
+      <span class="eyebrow">Session Skills</span>
+      <h1>사용 가능한 스킬 정리</h1>
+      <p class="intro">
+        현재 세션에서 바로 사용할 수 있는 스킬 목록을 한 페이지로 묶었습니다.
+        디자인, Figma, GitHub, 시스템/유틸리티 영역으로 나눠서 어떤 상황에서 어떤 스킬을 쓰면 되는지 빠르게 훑을 수 있게 정리했습니다.
+      </p>
+      <div class="stats">
+        <div class="stat">
+          <strong>34</strong>
+          <span>전체 스킬 수</span>
+        </div>
+        <div class="stat">
+          <strong>13</strong>
+          <span>UI · 디자인 관련</span>
+        </div>
+        <div class="stat">
+          <strong>12</strong>
+          <span>Figma 관련</span>
+        </div>
+        <div class="stat">
+          <strong>9</strong>
+          <span>GitHub · 시스템 · 유틸리티</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel category design">
+      <div class="category-head">
+        <div>
+          <span class="pill">Design Skills</span>
+          <h2>디자인 · UI</h2>
+        </div>
+        <p>레이아웃, 타이포그래피, 디자인 시스템 정렬, 품질 점검, UX 문구 다듬기처럼 화면 자체를 더 좋게 만드는 스킬들입니다.</p>
+      </div>
+      <div class="skills-grid">
+        <article class="skill">
+          <h3>apply-design-system</h3>
+          <p>기존 디자인을 검토하고 디자인 시스템 컴포넌트와 연결할 때 사용합니다.</p>
+          <div class="tagline"><span class="tag">design system</span><span class="tag">mapping</span></div>
+        </article>
+        <article class="skill">
+          <h3>arrange</h3>
+          <p>레이아웃, 간격, 시각적 리듬, 정렬, 계층감이 어색할 때 화면 구성을 다듬습니다.</p>
+          <div class="tagline"><span class="tag">layout</span><span class="tag">spacing</span></div>
+        </article>
+        <article class="skill">
+          <h3>audit</h3>
+          <p>접근성, 성능, 반응형, 테마, 안티패턴을 점검해 기술 품질 리포트를 만듭니다.</p>
+          <div class="tagline"><span class="tag">a11y</span><span class="tag">quality</span></div>
+        </article>
+        <article class="skill">
+          <h3>audit-design-system</h3>
+          <p>Figma 화면이나 컴포넌트가 디자인 시스템에서 얼마나 벗어났는지 점검합니다.</p>
+          <div class="tagline"><span class="tag">drift audit</span><span class="tag">figma</span></div>
+        </article>
+        <article class="skill">
+          <h3>clarify</h3>
+          <p>라벨, 안내문, 에러 메시지, 마이크로카피를 더 이해하기 쉽게 다듬습니다.</p>
+          <div class="tagline"><span class="tag">copy</span><span class="tag">ux writing</span></div>
+        </article>
+        <article class="skill">
+          <h3>frontend-design</h3>
+          <p>개성 있고 완성도 높은 프론트엔드 화면을 설계하고 구현할 때 사용하는 메인 디자인 스킬입니다.</p>
+          <div class="tagline"><span class="tag">frontend</span><span class="tag">creative UI</span></div>
+        </article>
+        <article class="skill">
+          <h3>normalize</h3>
+          <p>UI를 디자인 시스템 기준에 맞게 다시 정렬하고, 토큰이나 패턴의 일관성을 회복합니다.</p>
+          <div class="tagline"><span class="tag">consistency</span><span class="tag">tokens</span></div>
+        </article>
+        <article class="skill">
+          <h3>polish</h3>
+          <p>배포 직전 마감 단계에서 정렬, 간격, 세부 디테일을 다듬는 최종 품질 패스입니다.</p>
+          <div class="tagline"><span class="tag">final pass</span><span class="tag">refinement</span></div>
+        </article>
+        <article class="skill">
+          <h3>rad-spacing</h3>
+          <p>Figma 레이아웃과 계층 간격을 4px, 8px 리듬으로 정리하는 간격 전용 스킬입니다.</p>
+          <div class="tagline"><span class="tag">spacing</span><span class="tag">figma layout</span></div>
+        </article>
+        <article class="skill">
+          <h3>typeset</h3>
+          <p>폰트 선택, 타이포 계층, 가독성, 글줄 길이 같은 텍스트 품질을 정리합니다.</p>
+          <div class="tagline"><span class="tag">typography</span><span class="tag">readability</span></div>
+        </article>
+        <article class="skill">
+          <h3>openai-docs</h3>
+          <p>OpenAI 제품이나 API 사용법을 공식 문서 중심으로 최신 기준에 맞춰 정리할 때 씁니다.</p>
+          <div class="tagline"><span class="tag">OpenAI</span><span class="tag">official docs</span></div>
+        </article>
+        <article class="skill">
+          <h3>imagegen</h3>
+          <p>비트맵 이미지, 일러스트, 목업, 텍스처 등 코드가 아닌 래스터 자산이 필요할 때 사용합니다.</p>
+          <div class="tagline"><span class="tag">image</span><span class="tag">bitmap</span></div>
+        </article>
+        <article class="skill">
+          <h3>edit-figma-design</h3>
+          <p>텍스트 설명만으로 새 Figma 화면이나 목업을 만들거나 기존 디자인을 수정할 때 사용합니다.</p>
+          <div class="tagline"><span class="tag">mockup</span><span class="tag">figma canvas</span></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel category figma">
+      <div class="category-head">
+        <div>
+          <span class="pill">Figma Skills</span>
+          <h2>Figma · Design Ops</h2>
+        </div>
+        <p>토큰, 컴포넌트 라이브러리, Code Connect, 디자인 구현, Figma 파일 생성과 같은 워크플로우를 다루는 스킬들입니다.</p>
+      </div>
+      <div class="skills-grid">
+        <article class="skill">
+          <h3>cc-figma-component</h3>
+          <p>컴포넌트 계약을 바탕으로 Figma 컴포넌트 세트와 variants를 생성합니다.</p>
+          <div class="tagline"><span class="tag">component set</span><span class="tag">contract</span></div>
+        </article>
+        <article class="skill">
+          <h3>cc-figma-tokens</h3>
+          <p>코드의 디자인 토큰 정의를 Figma 변수 컬렉션으로 동기화합니다.</p>
+          <div class="tagline"><span class="tag">tokens</span><span class="tag">variables</span></div>
+        </article>
+        <article class="skill">
+          <h3>figma-augment-parallel</h3>
+          <p>Figma와 에이전트 병렬 작업을 연결해 구현과 디자인 반영을 함께 굴리는 흐름을 안내합니다.</p>
+          <div class="tagline"><span class="tag">multi-agent</span><span class="tag">workflow</span></div>
+        </article>
+        <article class="skill">
+          <h3>figma-generate-design</h3>
+          <p>앱 페이지나 화면 설명을 Figma 스크린으로 옮길 때 쓰는 대표 워크플로우입니다.</p>
+          <div class="tagline"><span class="tag">screen</span><span class="tag">from code</span></div>
+        </article>
+        <article class="skill">
+          <h3>figma-generate-library</h3>
+          <p>코드베이스를 바탕으로 Figma 디자인 시스템, 변수, 컴포넌트 라이브러리를 구축합니다.</p>
+          <div class="tagline"><span class="tag">library</span><span class="tag">design system</span></div>
+        </article>
+        <article class="skill">
+          <h3>figma:figma-code-connect-components</h3>
+          <p>Figma 컴포넌트와 실제 코드 컴포넌트를 Code Connect 매핑으로 연결합니다.</p>
+          <div class="tagline"><span class="tag">code connect</span><span class="tag">mapping</span></div>
+        </article>
+        <article class="skill">
+          <h3>figma:figma-create-design-system-rules</h3>
+          <p>프로젝트 전용 디자인 시스템 규칙을 생성해 Figma-to-code 흐름에 맞춥니다.</p>
+          <div class="tagline"><span class="tag">rules</span><span class="tag">project setup</span></div>
+        </article>
+        <article class="skill">
+          <h3>figma:figma-create-new-file</h3>
+          <p>새 Figma 파일이나 FigJam 파일을 시작할 때 사용하는 초기 생성 스킬입니다.</p>
+          <div class="tagline"><span class="tag">new file</span><span class="tag">figjam</span></div>
+        </article>
+        <article class="skill">
+          <h3>figma:figma-generate-design</h3>
+          <p>플러그인 제공 버전의 generate-design으로, Figma 플러그인 워크플로우에 맞게 화면을 만듭니다.</p>
+          <div class="tagline"><span class="tag">plugin skill</span><span class="tag">design generation</span></div>
+        </article>
+        <article class="skill">
+          <h3>figma:figma-generate-library</h3>
+          <p>플러그인 제공 버전의 design library 구축 스킬입니다.</p>
+          <div class="tagline"><span class="tag">plugin skill</span><span class="tag">library setup</span></div>
+        </article>
+        <article class="skill">
+          <h3>figma:figma-implement-design</h3>
+          <p>Figma 디자인을 실제 애플리케이션 코드로 구현할 때 사용하는 구현 중심 스킬입니다.</p>
+          <div class="tagline"><span class="tag">implement</span><span class="tag">design to code</span></div>
+        </article>
+        <article class="skill">
+          <h3>figma:figma-use</h3>
+          <p>Figma 캔버스 읽기와 쓰기 전에 반드시 선행해야 하는 기본 prerequisite 스킬입니다.</p>
+          <div class="tagline"><span class="tag">required</span><span class="tag">use_figma</span></div>
+        </article>
+        <article class="skill">
+          <h3>sync-figma-token</h3>
+          <p>코드 토큰과 Figma 변수를 동기화하면서 드리프트를 보고하고 승인 기반으로 적용합니다.</p>
+          <div class="tagline"><span class="tag">sync</span><span class="tag">drift report</span></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel category github">
+      <div class="category-head">
+        <div>
+          <span class="pill">GitHub Skills</span>
+          <h2>GitHub · 협업</h2>
+        </div>
+        <p>PR 리뷰 대응, CI 점검, GitHub 리포지토리 탐색, 변경사항 게시처럼 저장소 협업 흐름에 초점을 맞춘 스킬들입니다.</p>
+      </div>
+      <div class="skills-grid">
+        <article class="skill">
+          <h3>github:gh-address-comments</h3>
+          <p>GitHub PR 리뷰 코멘트를 읽고 실제로 반영 가능한 피드백을 처리합니다.</p>
+          <div class="tagline"><span class="tag">PR review</span><span class="tag">comments</span></div>
+        </article>
+        <article class="skill">
+          <h3>github:gh-fix-ci</h3>
+          <p>GitHub Actions 체크 실패를 조사하고 원인을 파악해 수정하는 데 사용합니다.</p>
+          <div class="tagline"><span class="tag">CI</span><span class="tag">GitHub Actions</span></div>
+        </article>
+        <article class="skill">
+          <h3>github:github</h3>
+          <p>리포지토리, PR, 이슈를 넓게 훑고 방향을 잡는 범용 GitHub 오리엔테이션 스킬입니다.</p>
+          <div class="tagline"><span class="tag">triage</span><span class="tag">repo context</span></div>
+        </article>
+        <article class="skill">
+          <h3>github:yeet</h3>
+          <p>로컬 변경을 커밋, 푸시하고 초안 PR까지 여는 게시용 워크플로우입니다.</p>
+          <div class="tagline"><span class="tag">publish</span><span class="tag">draft PR</span></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel category system">
+      <div class="category-head">
+        <div>
+          <span class="pill">System · Utility Skills</span>
+          <h2>시스템 · 확장</h2>
+        </div>
+        <p>스킬 탐색, 설치, 생성, 플러그인 스캐폴딩, 디자인 시스템 규칙 생성처럼 작업 환경 자체를 확장하는 스킬들입니다.</p>
+      </div>
+      <div class="skills-grid">
+        <article class="skill">
+          <h3>find-skills</h3>
+          <p>원하는 작업에 맞는 설치 가능한 스킬이 있는지 찾고 추천할 때 사용합니다.</p>
+          <div class="tagline"><span class="tag">discover</span><span class="tag">skills</span></div>
+        </article>
+        <article class="skill">
+          <h3>plugin-creator</h3>
+          <p>새 Codex 플러그인 디렉토리와 기본 구조를 스캐폴딩합니다.</p>
+          <div class="tagline"><span class="tag">plugin</span><span class="tag">scaffold</span></div>
+        </article>
+        <article class="skill">
+          <h3>skill-creator</h3>
+          <p>새 스킬을 만들거나 기존 스킬을 개선하기 위한 구조와 작성법을 안내합니다.</p>
+          <div class="tagline"><span class="tag">authoring</span><span class="tag">skills</span></div>
+        </article>
+        <article class="skill">
+          <h3>skill-installer</h3>
+          <p>큐레이션 목록이나 GitHub 경로에서 Codex 스킬을 설치합니다.</p>
+          <div class="tagline"><span class="tag">install</span><span class="tag">codex home</span></div>
+        </article>
+      </div>
+      <div class="footer-note">
+        참고로 Figma 관련 작업에서 `use_figma` 계열이 필요하면 `figma:figma-use`를 먼저 써야 하고,
+        OpenAI 제품 관련 최신 문서가 필요하면 `openai-docs`를 우선 사용하는 흐름이 권장됩니다.
+      </div>
+    </section>
+  </main>
+</body>
+</html>
