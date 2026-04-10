@@ -11,7 +11,7 @@ const CHANNEL_DATA_DIR = process.env.CHANNEL_DATA_DIR
   : path.resolve("data/channels");
 const DEVLOG_DATA_PATH = process.env.DEVLOG_DATA_PATH
   ? path.resolve(process.env.DEVLOG_DATA_PATH)
-  : path.resolve("../devlog/data/devlogs.json");
+  : path.resolve("../xlog/data/devlogs.json");
 const OUTPUT_PATH = process.env.DASHBOARD_DATA_PATH
   ? path.resolve(process.env.DASHBOARD_DATA_PATH)
   : path.resolve("data/dashboard.json");

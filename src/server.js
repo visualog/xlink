@@ -17,7 +17,7 @@ const HANDOFF_DATA_PATH = process.env.HANDOFF_DATA_PATH
   : path.resolve(__dirname, STORE_BACKEND === "sqlite" ? "../data/handoffs.sqlite" : "../data/handoffs.json");
 const DEVLOG_DATA_PATH = process.env.DEVLOG_DATA_PATH
   ? path.resolve(process.env.DEVLOG_DATA_PATH)
-  : path.resolve(__dirname, "../../devlog/data/devlogs.json");
+  : path.resolve(__dirname, "../../xlog/data/devlogs.json");
 const CHANNEL_DATA_DIR = process.env.CHANNEL_DATA_DIR
   ? path.resolve(process.env.CHANNEL_DATA_DIR)
   : path.resolve(__dirname, "../data/channels");

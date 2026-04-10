@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-04-10T04:21:13.459Z",
+  "generatedAt": "2026-04-10T06:33:03.184Z",
   "backend": "sqlite",
   "handoffDataPath": "/Users/im_018/Documents/GitHub/2026_important/figma_skills/xlink/data/handoffs.sqlite",
-  "devlogDataPath": "/Users/im_018/Documents/GitHub/2026_important/figma_skills/devlog/data/devlogs.json",
+  "devlogDataPath": "/Users/im_018/Documents/GitHub/2026_important/figma_skills/xlog/data/devlogs.json",
   "summary": {
     "totalHandoffs": 28,
     "byStatus": {

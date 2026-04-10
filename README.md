@@ -59,7 +59,7 @@ npm run cli -- record-devlog --input ./payload.json --source-agent bridge-agent 
 - `STORE_BACKEND`
   - `json` 또는 `sqlite`
 - `DEVLOG_DATA_PATH`
-  - 기본값: `../devlog/data/devlogs.json`
+  - 기본값: `../xlog/data/devlogs.json`
 - `HANDOFF_DATA_PATH`
   - `json`이면 기본값: `data/handoffs.json`
   - `sqlite`이면 기본값: `data/handoffs.sqlite`
@@ -474,7 +474,7 @@ MCP tool:
 - `ingest_devlog_card`
 
 기본 대상 파일:
-- `/Users/im_018/Documents/GitHub/2026_important/figma_skills/devlog/data/devlogs.json`
+- `/Users/im_018/Documents/GitHub/2026_important/figma_skills/xlog/data/devlogs.json`
 
 필요하면 환경 변수 `DEVLOG_DATA_PATH`로 대체 가능하다.
 
