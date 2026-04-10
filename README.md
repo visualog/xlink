@@ -340,12 +340,16 @@ npm start
 - `create_handoff`
 - `list_handoffs`
 - `get_handoff`
+- `get_mailbox`
+- `get_conversation`
+- `append_reply`
 - `preview_projection`
 - `preview_devlog_card`
 - `ingest_devlog_card`
 - `sync_devlog_handoff`
 - `ingest_projection`
 - `sync_handoff_channel`
+- `validate_xbridge_compose`
 - `claim_handoff`
 - `block_handoff`
 - `reject_handoff`

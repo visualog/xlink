@@ -235,6 +235,26 @@ const TOOL_DEFINITIONS = [
         result: { type: "string" }
       }
     }
+  },
+  {
+    name: "validate_xbridge_compose",
+    description:
+      "Validate a handoff payload against Xbridge compose contract and optionally auto-block the handoff on failure.",
+    inputSchema: {
+      type: "object",
+      required: ["id"],
+      properties: {
+        id: { type: "string" },
+        payload: { type: "object" },
+        xbridgeBaseUrl: { type: "string" },
+        recordMessage: { type: "boolean" },
+        author: { type: "string" },
+        note: { type: "string" },
+        kind: { type: "string" },
+        autoBlockOnFailure: { type: "boolean" },
+        blockReason: { type: "string" }
+      }
+    }
   }
 ];
 
@@ -335,6 +355,20 @@ export async function callTool(name, args, options = {}) {
           agent: args.agent,
           note: args.note,
           result: args.result
+        }
+      }, fetchImpl);
+    case "validate_xbridge_compose":
+      return requestJson(baseUrl, `/handoffs/${args.id}/xbridge-validate`, {
+        method: "POST",
+        body: {
+          payload: args.payload,
+          baseUrl: args.xbridgeBaseUrl,
+          recordMessage: args.recordMessage,
+          author: args.author,
+          note: args.note,
+          kind: args.kind,
+          autoBlockOnFailure: args.autoBlockOnFailure,
+          blockReason: args.blockReason
         }
       }, fetchImpl);
     case "claim_handoff":
