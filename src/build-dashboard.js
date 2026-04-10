@@ -51,6 +51,73 @@ function summarizeByChannel(handoffs) {
   return counts;
 }
 
+function parseValidationMessage(body) {
+  if (typeof body !== "string" || !body.trim()) {
+    return null;
+  }
+
+  const normalized = body.trim();
+  const match = normalized.match(
+    /xbridge compose validation (ready|blocked):\s*(\d+)\s*error\(s\),\s*(\d+)\s*warning\(s\)/i
+  );
+  if (!match) {
+    return null;
+  }
+
+  const retryMatch = normalized.match(/retry\s+(\d+)회/i);
+  return {
+    readiness: String(match[1] || "").toLowerCase(),
+    errorCount: Number(match[2] || 0),
+    warningCount: Number(match[3] || 0),
+    retryCount: retryMatch ? Number(retryMatch[1] || 0) : 0
+  };
+}
+
+function summarizeValidation(handoffs) {
+  const blockedHandoffIds = new Set();
+  const summary = {
+    events: 0,
+    readyEvents: 0,
+    blockedEvents: 0,
+    errorTotal: 0,
+    warningTotal: 0,
+    retryEvents: 0,
+    retryTotal: 0,
+    blockedHandoffs: 0
+  };
+
+  for (const handoff of handoffs) {
+    const messages = Array.isArray(handoff?.messages) ? handoff.messages : [];
+    for (const message of messages) {
+      const parsed = parseValidationMessage(message?.body);
+      if (!parsed) {
+        continue;
+      }
+
+      summary.events += 1;
+      summary.errorTotal += parsed.errorCount;
+      summary.warningTotal += parsed.warningCount;
+
+      if (parsed.readiness === "blocked") {
+        summary.blockedEvents += 1;
+        if (handoff?.id) {
+          blockedHandoffIds.add(handoff.id);
+        }
+      } else {
+        summary.readyEvents += 1;
+      }
+
+      if (parsed.retryCount > 0) {
+        summary.retryEvents += 1;
+        summary.retryTotal += parsed.retryCount;
+      }
+    }
+  }
+
+  summary.blockedHandoffs = blockedHandoffIds.size;
+  return summary;
+}
+
 async function loadChannelStores() {
   const result = [];
 
@@ -144,6 +211,7 @@ export async function buildDashboardSnapshot(options = {}) {
       totalHandoffs: handoffs.length,
       byStatus: summarizeByStatus(handoffs),
       byChannel: summarizeByChannel(handoffs),
+      validation: summarizeValidation(handoffs),
       channelStores: channelEntries.length,
       devlogEntries: Array.isArray(devlogData?.entries) ? devlogData.entries.length : 0
     },

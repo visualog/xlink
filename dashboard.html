@@ -781,6 +781,7 @@
       const blocked = data.summary.byStatus.blocked || 0;
       const rejected = data.summary.byStatus.rejected || 0;
       const stores = data.summary.channelStores || 0;
+      const validation = data.summary.validation || {};
 
       return [
         {
@@ -793,7 +794,11 @@
           step: "Step 2",
           title: "Coordinator 저장",
           body: "SQLite store에 상태와 메시지를 기록하고, 이후 claim 가능한 큐로 둡니다.",
-          chips: [chip(`completed:${completed}`), chip(`blocked:${blocked}`)]
+          chips: [
+            chip(`completed:${completed}`),
+            chip(`blocked:${blocked}`),
+            chip(`validation:${validation.events || 0}`)
+          ]
         },
         {
           step: "Step 3",
@@ -811,7 +816,10 @@
           step: "Step 5",
           title: "Sync 완료",
           body: "sync workflow는 claim, ingest, complete를 이어서 처리하고 운영 화면에 반영됩니다.",
-          chips: [chip(`generated:${formatDate(data.generatedAt)}`)]
+          chips: [
+            chip(`retry-events:${validation.retryEvents || 0}`),
+            chip(`generated:${formatDate(data.generatedAt)}`)
+          ]
         }
       ];
     }
@@ -1060,7 +1068,9 @@
         ["Total Handoffs", data.summary.totalHandoffs, "all"],
         ["Completed", data.summary.byStatus.completed || 0, "completed"],
         ["Pending", data.summary.byStatus.pending || 0, "pending"],
-        ["Blocked", data.summary.byStatus.blocked || 0, "blocked"]
+        ["Blocked", data.summary.byStatus.blocked || 0, "blocked"],
+        ["Validation Blocked", data.summary.validation?.blockedEvents || 0, "all"],
+        ["Validation Retry", data.summary.validation?.retryEvents || 0, "all"]
       ];
 
       document.getElementById("stats").innerHTML = stats.map(([label, value, status]) => `
@@ -1116,7 +1126,11 @@
         ["Generated", formatDate(data.generatedAt)],
         ["Backend", data.backend],
         ["Handoff Store", data.handoffDataPath],
-        ["Devlog Data", data.devlogDataPath]
+        ["Devlog Data", data.devlogDataPath],
+        [
+          "Validation Summary",
+          `events:${data.summary.validation?.events || 0} / blocked:${data.summary.validation?.blockedEvents || 0} / retry:${data.summary.validation?.retryEvents || 0}`
+        ]
       ];
       document.getElementById("env-list").innerHTML = envRows.map(([label, value]) => `
         <div class="list-card">

@@ -1,35 +1,109 @@
 {
-  "generatedAt": "2026-04-09T06:33:54.426Z",
+  "generatedAt": "2026-04-10T04:21:13.459Z",
   "backend": "sqlite",
   "handoffDataPath": "/Users/im_018/Documents/GitHub/2026_important/figma_skills/xlink/data/handoffs.sqlite",
   "devlogDataPath": "/Users/im_018/Documents/GitHub/2026_important/figma_skills/devlog/data/devlogs.json",
   "summary": {
-    "totalHandoffs": 27,
+    "totalHandoffs": 28,
     "byStatus": {
-      "pending": 3,
+      "pending": 2,
       "claimed": 0,
-      "completed": 24,
-      "blocked": 0,
+      "completed": 25,
+      "blocked": 1,
       "rejected": 0
     },
     "byChannel": {
-      "bridge": 3,
-      "devlog": 24
+      "devlog": 25,
+      "bridge": 3
+    },
+    "validation": {
+      "events": 3,
+      "readyEvents": 1,
+      "blockedEvents": 2,
+      "errorTotal": 2,
+      "warningTotal": 6,
+      "retryEvents": 0,
+      "retryTotal": 0,
+      "blockedHandoffs": 1
     },
     "channelStores": 4,
-    "devlogEntries": 32
+    "devlogEntries": 33
   },
   "recentHandoffs": [
+    {
+      "id": "handoff_2026_04_09_005",
+      "channel": "devlog",
+      "targetAgent": "devlog-agent",
+      "sourceAgent": "bridge-agent",
+      "title": "xlink auto block on validation failure",
+      "status": "completed",
+      "priority": "medium",
+      "createdAt": "2026-04-09T06:36:02.296Z",
+      "updatedAt": "2026-04-09T06:36:02.300Z",
+      "claimedAt": "2026-04-09T06:36:02.299Z",
+      "completedAt": "2026-04-09T06:36:02.300Z",
+      "claimedBy": "devlog-agent",
+      "payload": {
+        "type": "feature",
+        "title": "xlink auto-blocks invalid compose handoffs",
+        "date": "2026.04.09 오후 3:35",
+        "summary": "xbridge compose validation 실패 시 handoff를 자동 blocked 처리하는 옵션을 xlink에 추가했다.",
+        "details": [
+          "POST /handoffs/:id/xbridge-validate에서 autoBlockOnFailure=true면 canCompose=false일 때 store.block을 호출한다.",
+          "CLI validate-xbridge-compose에 --auto-block 옵션을 추가했다.",
+          "실제 handoff에서 missing_intent_sections 오류 케이스를 검증하고 상태가 blocked로 전환되는 것을 확인했다."
+        ],
+        "tags": [
+          "xlink",
+          "xbridge",
+          "validation",
+          "blocked"
+        ],
+        "status": "done",
+        "version": "0.1.0",
+        "commit": "",
+        "files": [
+          "xlink/src/routes/handoffs.js",
+          "xlink/src/cli.js",
+          "xlink/README.md"
+        ],
+        "links": [],
+        "thumbnail": "",
+        "codeSnippets": [
+          {
+            "file": "xlink/src/routes/handoffs.js",
+            "label": "auto block on validation failure",
+            "language": "js",
+            "code": "if (body.autoBlockOnFailure === true && validationResult.validation?.canCompose === false) { updatedHandoff = await store.block(id, { agent: body.author ?? \"bridge-agent\", reason: body.blockReason ?? \"xbridge compose validation failed: handoff moved to blocked for follow-up.\" }); }"
+          }
+        ]
+      },
+      "artifacts": [],
+      "messages": [
+        {
+          "author": "devlog-agent",
+          "body": "devlog sync started",
+          "kind": "note",
+          "createdAt": "2026-04-09T06:36:02.299Z"
+        },
+        {
+          "author": "devlog-agent",
+          "body": "devlog card ingested and handoff completed",
+          "kind": "result",
+          "createdAt": "2026-04-09T06:36:02.300Z"
+        }
+      ]
+    },
     {
       "id": "handoff_2026_04_09_004",
       "channel": "bridge",
       "targetAgent": "bridge-agent",
       "sourceAgent": "analysis-agent",
       "title": "validate compose payload auto block smoke",
-      "status": "pending",
+      "status": "blocked",
       "priority": "medium",
       "createdAt": "2026-04-09T06:30:51.596Z",
-      "updatedAt": "2026-04-09T06:31:19.914Z",
+      "updatedAt": "2026-04-09T06:34:22.915Z",
       "claimedAt": null,
       "completedAt": null,
       "claimedBy": null,
@@ -61,6 +135,18 @@
           "body": "xbridge compose validation blocked: 1 error(s), 2 warning(s)",
           "kind": "note",
           "createdAt": "2026-04-09T06:31:19.914Z"
+        },
+        {
+          "author": "bridge-agent",
+          "body": "xbridge compose validation blocked: 1 error(s), 2 warning(s)",
+          "kind": "note",
+          "createdAt": "2026-04-09T06:34:22.912Z"
+        },
+        {
+          "author": "bridge-agent",
+          "body": "xbridge compose validation failed: handoff moved to blocked for follow-up.",
+          "kind": "blocked",
+          "createdAt": "2026-04-09T06:34:22.915Z"
         }
       ]
     },
@@ -661,68 +747,6 @@
           "createdAt": "2026-04-08T04:56:34.387Z"
         }
       ]
-    },
-    {
-      "id": "handoff_2026_04_08_011",
-      "channel": "devlog",
-      "targetAgent": "devlog-agent",
-      "sourceAgent": "bridge-agent",
-      "title": "analyze-to-compose intent flow smoke verified",
-      "status": "completed",
-      "priority": "medium",
-      "createdAt": "2026-04-08T04:44:54.798Z",
-      "updatedAt": "2026-04-08T04:44:54.802Z",
-      "claimedAt": "2026-04-08T04:44:54.801Z",
-      "completedAt": "2026-04-08T04:44:54.802Z",
-      "claimedBy": "devlog-agent",
-      "payload": {
-        "type": "feature",
-        "title": "analyze-to-compose intent flow smoke verified",
-        "date": "08 April, 2026",
-        "summary": "Verified that analyze_reference_selection now returns intentSections in the live bridge runtime and that those sections can be passed directly into compose_screen_from_intents to create a Figma screen.",
-        "details": [
-          "desktop SaaS dashboard shell을 더 짧은 schema로 만들 수 있게 됐다.",
-          "Agent_skill_test 세션으로 실제 smoke 요청을 보내 생성 경로를 확인했다."
-        ],
-        "tags": [
-          "xbridge",
-          "smoke",
-          "analyze-reference-selection",
-          "compose-screen-from-intents"
-        ],
-        "status": "done",
-        "version": "0.2.0",
-        "commit": "pending",
-        "files": [
-          "README.md",
-          "src/analyze-reference-selection.js"
-        ],
-        "links": [],
-        "thumbnail": "",
-        "codeSnippets": [
-          {
-            "file": "src/build-layout.js",
-            "label": "dashboard-board preset",
-            "language": "js",
-            "code": "// 핵심 변경 부분을 5~25줄 정도로 넣는다."
-          }
-        ]
-      },
-      "artifacts": [],
-      "messages": [
-        {
-          "author": "devlog-agent",
-          "body": "devlog sync started",
-          "kind": "note",
-          "createdAt": "2026-04-08T04:44:54.801Z"
-        },
-        {
-          "author": "devlog-agent",
-          "body": "devlog card ingested and handoff completed",
-          "kind": "result",
-          "createdAt": "2026-04-08T04:44:54.802Z"
-        }
-      ]
     }
   ],
   "channelStores": [
@@ -812,6 +836,40 @@
   "devlog": {
     "updatedAt": "2026-04-09",
     "entries": [
+      {
+        "id": "handoff-2026-04-09-005",
+        "type": "feature",
+        "title": "xlink auto-blocks invalid compose handoffs",
+        "date": "2026.04.09 오후 3:35",
+        "status": "done",
+        "summary": "xbridge compose validation 실패 시 handoff를 자동 blocked 처리하는 옵션을 xlink에 추가했다.",
+        "details": [
+          "POST /handoffs/:id/xbridge-validate에서 autoBlockOnFailure=true면 canCompose=false일 때 store.block을 호출한다.",
+          "CLI validate-xbridge-compose에 --auto-block 옵션을 추가했다.",
+          "실제 handoff에서 missing_intent_sections 오류 케이스를 검증하고 상태가 blocked로 전환되는 것을 확인했다."
+        ],
+        "tags": [
+          "xlink",
+          "xbridge",
+          "validation",
+          "blocked"
+        ],
+        "files": [
+          "xlink/src/routes/handoffs.js",
+          "xlink/src/cli.js",
+          "xlink/README.md"
+        ],
+        "commit": "",
+        "version": "0.1.0",
+        "codeSnippets": [
+          {
+            "file": "xlink/src/routes/handoffs.js",
+            "label": "auto block on validation failure",
+            "language": "js",
+            "code": "if (body.autoBlockOnFailure === true && validationResult.validation?.canCompose === false) { updatedHandoff = await store.block(id, { agent: body.author ?? \"bridge-agent\", reason: body.blockReason ?? \"xbridge compose validation failed: handoff moved to blocked for follow-up.\" }); }"
+          }
+        ]
+      },
       {
         "id": "handoff-2026-04-09-003",
         "type": "feature",
@@ -1032,38 +1090,6 @@
           "analyze-reference-selection",
           "fragments",
           "smoke"
-        ],
-        "files": [
-          "src/analyze-reference-selection.js",
-          "tests/analyze-reference-selection.test.js"
-        ],
-        "commit": "pending",
-        "version": "0.2.0",
-        "codeSnippets": [
-          {
-            "file": "src/build-layout.js",
-            "label": "dashboard-board preset",
-            "language": "js",
-            "code": "// 핵심 변경 부분을 5~25줄 정도로 넣는다."
-          }
-        ]
-      },
-      {
-        "id": "handoff-2026-04-08-012",
-        "type": "feature",
-        "title": "analyze reference selection now detects screen fragments",
-        "date": "08 April, 2026",
-        "status": "done",
-        "summary": "Improved analyze_reference_selection so narrow rails and named shells like sidebar-shell are classified as sidebar fragments instead of generic mobile detail drafts.",
-        "details": [
-          "desktop SaaS dashboard shell을 더 짧은 schema로 만들 수 있게 됐다.",
-          "Agent_skill_test 세션으로 실제 smoke 요청을 보내 생성 경로를 확인했다."
-        ],
-        "tags": [
-          "xbridge",
-          "analyze-reference-selection",
-          "fragments",
-          "ds-aware"
         ],
         "files": [
           "src/analyze-reference-selection.js",
