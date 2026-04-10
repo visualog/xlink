@@ -261,6 +261,8 @@ compose payload를 handoff로 주고받을 때는, 실제 compose 전에 Xbridge
 - `--xbridge-base-url` : bridge 주소. 기본 `http://127.0.0.1:3846`
 - `--no-record` : conversation에 validation summary를 남기지 않음
 - `--auto-block` : `canCompose === false`면 handoff를 `blocked`로 자동 전환
+- HTTP/MCP에서는 `autoRetryOnFailure`를 켜면 실패 시 재검증을 1회 수행
+- 재시도 보정값은 `defaultParentId`, `fallbackIntentSections`, `retryPolicy.maxRetries`로 제어 가능
 - `ingest-devlog`
 - `sync-devlog`
 

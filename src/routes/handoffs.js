@@ -2,7 +2,10 @@ import { json, readJsonBody } from "../http.js";
 import { buildConversationSnapshot } from "../mailbox.js";
 import { toDevlogCard } from "../devlog.js";
 import { projectHandoff } from "../projections.js";
-import { validateXbridgeComposePayload } from "../xbridge-validator.js";
+import {
+  validateXbridgeComposePayload,
+  validateXbridgeComposeWithRetry
+} from "../xbridge-validator.js";
 
 export function createHandoffRoutes(store, options = {}) {
   const devlogStore = options.devlogStore ?? null;
@@ -154,15 +157,31 @@ export function createHandoffRoutes(store, options = {}) {
       const body = await readJsonBody(request);
       const handoff = await store.getById(id);
       const payload = body.payload ?? handoff.payload ?? {};
-      const validationResult = await validateXbridgeComposePayload(payload, {
-        baseUrl: body.baseUrl
-      });
+      const shouldRetry = body.autoRetryOnFailure === true || !!body.retryPolicy;
+      const validationResult = shouldRetry
+        ? await validateXbridgeComposeWithRetry(payload, {
+            baseUrl: body.baseUrl,
+            retryPolicy: {
+              ...body.retryPolicy,
+              defaultParentId:
+                body.retryPolicy?.defaultParentId ?? body.defaultParentId,
+              fallbackIntentSections:
+                body.retryPolicy?.fallbackIntentSections ?? body.fallbackIntentSections
+            }
+          })
+        : await validateXbridgeComposePayload(payload, {
+            baseUrl: body.baseUrl
+          });
 
       let updatedHandoff = handoff;
       if (body.recordMessage !== false) {
+        const retryNote =
+          validationResult.retries > 0
+            ? ` (retry ${validationResult.retries}회, rules: ${validationResult.appliedRules.join(", ") || "none"})`
+            : "";
         updatedHandoff = await store.appendMessage(id, {
           author: body.author ?? "bridge-agent",
-          body: body.note ?? validationResult.summary,
+          body: body.note ?? `${validationResult.summary}${retryNote}`,
           kind: body.kind ?? "note"
         });
       }

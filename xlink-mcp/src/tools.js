@@ -251,6 +251,10 @@ const TOOL_DEFINITIONS = [
         author: { type: "string" },
         note: { type: "string" },
         kind: { type: "string" },
+        autoRetryOnFailure: { type: "boolean" },
+        defaultParentId: { type: "string" },
+        fallbackIntentSections: { type: "array" },
+        retryPolicy: { type: "object" },
         autoBlockOnFailure: { type: "boolean" },
         blockReason: { type: "string" }
       }
@@ -367,6 +371,10 @@ export async function callTool(name, args, options = {}) {
           author: args.author,
           note: args.note,
           kind: args.kind,
+          autoRetryOnFailure: args.autoRetryOnFailure,
+          defaultParentId: args.defaultParentId,
+          fallbackIntentSections: args.fallbackIntentSections,
+          retryPolicy: args.retryPolicy,
           autoBlockOnFailure: args.autoBlockOnFailure,
           blockReason: args.blockReason
         }

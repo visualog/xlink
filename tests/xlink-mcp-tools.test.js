@@ -39,6 +39,8 @@ test("validate_xbridge_compose posts to xbridge-validate endpoint", async () => 
       id: "handoff_001",
       payload: { parentId: "817:417", intentSections: [{ intent: "screen/topbar" }] },
       xbridgeBaseUrl: "http://127.0.0.1:3846",
+      autoRetryOnFailure: true,
+      defaultParentId: "817:417",
       autoBlockOnFailure: true
     },
     {
@@ -53,6 +55,8 @@ test("validate_xbridge_compose posts to xbridge-validate endpoint", async () => 
 
   const body = JSON.parse(calls[0].options.body);
   assert.equal(body.baseUrl, "http://127.0.0.1:3846");
+  assert.equal(body.autoRetryOnFailure, true);
+  assert.equal(body.defaultParentId, "817:417");
   assert.equal(body.autoBlockOnFailure, true);
   assert.equal(body.payload.parentId, "817:417");
 });

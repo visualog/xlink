@@ -33,6 +33,15 @@ function buildValidationSummary(report = {}) {
   return `xbridge compose validation ${readiness}: ${errorCount} error(s), ${warningCount} warning(s)`;
 }
 
+function normalizeErrorCodeList(validation = {}) {
+  if (!Array.isArray(validation?.errors)) {
+    return [];
+  }
+  return validation.errors
+    .map((entry) => String(entry?.code || "").trim())
+    .filter(Boolean);
+}
+
 export async function validateXbridgeComposePayload(payload = {}, options = {}) {
   const baseUrl = normalizeBaseUrl(options.baseUrl);
   const response = await fetch(`${baseUrl}/api/validate-external-compose-input`, {
@@ -71,5 +80,62 @@ export async function validateXbridgeComposePayload(payload = {}, options = {}) 
     validationReport,
     projection,
     summary: buildValidationSummary(validationReport)
+  };
+}
+
+export async function validateXbridgeComposeWithRetry(payload = {}, options = {}) {
+  const maxRetriesRaw = Number(options?.retryPolicy?.maxRetries ?? 1);
+  const maxRetries = Number.isFinite(maxRetriesRaw) ? Math.max(0, Math.floor(maxRetriesRaw)) : 1;
+  const appliedRules = [];
+  const attempts = [];
+  let currentPayload = payload && typeof payload === "object" ? { ...payload } : {};
+
+  let result = await validateXbridgeComposePayload(currentPayload, options);
+  attempts.push(result);
+
+  let retries = 0;
+  while (result?.validationReport?.canCompose === false && retries < maxRetries) {
+    const codes = normalizeErrorCodeList(result.validation);
+    let mutated = false;
+
+    if (codes.includes("missing_parent_id")) {
+      const fallbackParentId = String(options?.retryPolicy?.defaultParentId || "").trim();
+      if (fallbackParentId) {
+        currentPayload = { ...currentPayload, parentId: fallbackParentId };
+        appliedRules.push("inject_default_parent_id");
+        mutated = true;
+      }
+    }
+
+    if (codes.includes("missing_intent_sections")) {
+      const fallbackIntentSections = Array.isArray(options?.retryPolicy?.fallbackIntentSections)
+        ? options.retryPolicy.fallbackIntentSections
+        : [];
+      if (fallbackIntentSections.length > 0) {
+        currentPayload = {
+          ...currentPayload,
+          intentSections: fallbackIntentSections
+        };
+        appliedRules.push("inject_fallback_intent_sections");
+        mutated = true;
+      }
+    }
+
+    if (!mutated) {
+      break;
+    }
+
+    retries += 1;
+    result = await validateXbridgeComposePayload(currentPayload, options);
+    attempts.push(result);
+  }
+
+  return {
+    ...result,
+    attempts,
+    retries,
+    appliedRules,
+    retryPolicy: options?.retryPolicy || null,
+    payloadUsed: currentPayload
   };
 }
