@@ -5,10 +5,31 @@ function normalizeBaseUrl(value) {
   return normalized.replace(/\/+$/, "");
 }
 
-function buildValidationSummary(result = {}) {
-  const errorCount = Array.isArray(result.errors) ? result.errors.length : 0;
-  const warningCount = Array.isArray(result.warnings) ? result.warnings.length : 0;
-  const readiness = result.canCompose ? "ready" : "blocked";
+function normalizeValidationReport(result = {}) {
+  if (result?.validationReport && typeof result.validationReport === "object") {
+    return result.validationReport;
+  }
+  if (result?.report && typeof result.report === "object") {
+    return result.report;
+  }
+
+  const errorCount = Array.isArray(result?.errors) ? result.errors.length : 0;
+  const warningCount = Array.isArray(result?.warnings) ? result.warnings.length : 0;
+  const canCompose = result?.canCompose !== false;
+  return {
+    status: canCompose ? (warningCount > 0 ? "warn" : "pass") : "fail",
+    canCompose,
+    errorCount,
+    warningCount,
+    resolvedSource: "unknown",
+    resolvedSectionCount: 0
+  };
+}
+
+function buildValidationSummary(report = {}) {
+  const errorCount = Number(report?.errorCount || 0);
+  const warningCount = Number(report?.warningCount || 0);
+  const readiness = report?.canCompose === false ? "blocked" : "ready";
   return `xbridge compose validation ${readiness}: ${errorCount} error(s), ${warningCount} warning(s)`;
 }
 
@@ -32,9 +53,23 @@ export async function validateXbridgeComposePayload(payload = {}, options = {}) 
     throw error;
   }
 
+  const validation = data.result ?? {};
+  const validationReport = normalizeValidationReport(validation);
+  const projection = {
+    validationReport,
+    canCompose: validationReport.canCompose !== false,
+    status: validationReport.status,
+    errorCount: validationReport.errorCount,
+    warningCount: validationReport.warningCount,
+    resolvedSource: validationReport.resolvedSource,
+    resolvedSectionCount: validationReport.resolvedSectionCount
+  };
+
   return {
     baseUrl,
-    validation: data.result,
-    summary: buildValidationSummary(data.result)
+    validation,
+    validationReport,
+    projection,
+    summary: buildValidationSummary(validationReport)
   };
 }

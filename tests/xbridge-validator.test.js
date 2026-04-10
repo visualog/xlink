@@ -13,7 +13,15 @@ test("validateXbridgeComposePayload returns validation result and summary", asyn
       result: {
         canCompose: true,
         errors: [],
-        warnings: [{ code: "missing_name" }]
+        warnings: [{ code: "missing_name" }],
+        validationReport: {
+          status: "warn",
+          canCompose: true,
+          errorCount: 0,
+          warningCount: 1,
+          resolvedSource: "sections",
+          resolvedSectionCount: 1
+        }
       }
     })
   });
@@ -26,6 +34,8 @@ test("validateXbridgeComposePayload returns validation result and summary", asyn
 
     assert.equal(result.validation.canCompose, true);
     assert.equal(result.validation.warnings.length, 1);
+    assert.equal(result.validationReport.status, "warn");
+    assert.equal(result.projection.warningCount, 1);
     assert.match(result.summary, /ready: 0 error\(s\), 1 warning\(s\)/);
   } finally {
     globalThis.fetch = originalFetch;

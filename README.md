@@ -253,6 +253,7 @@ compose payload를 handoff로 주고받을 때는, 실제 compose 전에 Xbridge
 기본 동작:
 - handoff payload를 그대로 Xbridge `validate_external_compose_input`에 전달
 - 결과를 반환
+- `validationReport`/`projection` 공통 포맷(`status`, `canCompose`, `errorCount`, `warningCount`, `resolvedSource`, `resolvedSectionCount`)을 함께 노출
 - 기본적으로 conversation에 validation summary 메시지를 1개 남김
 
 옵션:
