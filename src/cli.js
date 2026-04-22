@@ -3,8 +3,9 @@ import path from "node:path";
 import { JsonHandoffStore, createHandoffStore } from "./store.js";
 import { JsonDevlogStore } from "./devlog-store.js";
 import { JsonChannelProjectionStore } from "./channel-store.js";
-import { buildConversationSnapshot, buildMailboxSnapshot } from "./mailbox.js";
+import { buildConversationSnapshot, buildMailboxSnapshot, buildThreadInbox } from "./mailbox.js";
 import { toDevlogCard } from "./devlog.js";
+import { syncDevlogHandoff, syncPendingDevlogHandoffs } from "./devlog-sync.js";
 import { projectHandoff } from "./projections.js";
 
 const STORE_BACKEND = process.env.STORE_BACKEND ?? "sqlite";
@@ -20,6 +21,19 @@ const CHANNEL_DATA_DIR = process.env.CHANNEL_DATA_DIR
 
 function printJson(value) {
   console.log(JSON.stringify(value, null, 2));
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseInterval(value, fallback = 2000) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return Math.max(250, Math.trunc(parsed));
 }
 
 function parseFlags(args) {
@@ -49,6 +63,67 @@ function parseFlags(args) {
   return { flags, positionals };
 }
 
+function trimOptionalFlag(value) {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed || undefined;
+}
+
+function getOptionalFlag(flags, ...keys) {
+  for (const key of keys) {
+    const value = trimOptionalFlag(flags[key]);
+    if (value !== undefined) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
+function isEnabledFlag(value) {
+  return value === true || value === "true";
+}
+
+function shouldIncludeThreadSummaries(flags) {
+  return isEnabledFlag(flags["include-read-state"]) || isEnabledFlag(flags.includeReadState) || Boolean(getOptionalFlag(flags, "agent"));
+}
+
+function getThreadRouteFiltersForCli(flags, threadId) {
+  return {
+    threadId,
+    status: getOptionalFlag(flags, "status"),
+    channel: getOptionalFlag(flags, "channel"),
+    targetAgent: getOptionalFlag(flags, "target-agent", "targetAgent"),
+    sourceAgent: getOptionalFlag(flags, "source-agent", "sourceAgent"),
+    updatedSince: getOptionalFlag(flags, "after")
+  };
+}
+
+function getHandoffFiltersForThreadCli(flags, threadId) {
+  return {
+    threadId,
+    channel: getOptionalFlag(flags, "channel"),
+    targetAgent: getOptionalFlag(flags, "target-agent", "targetAgent"),
+    sourceAgent: getOptionalFlag(flags, "source-agent", "sourceAgent"),
+    updatedSince: getOptionalFlag(flags, "after")
+  };
+}
+
+function filterMailboxCollectionsByThread(collections, threadId) {
+  const normalizedThreadId = trimOptionalFlag(threadId);
+  if (!normalizedThreadId) {
+    return collections;
+  }
+
+  return {
+    handoffs: collections.handoffs.filter((handoff) => handoff.threadId === normalizedThreadId),
+    threads: collections.threads.filter((thread) => thread.id === normalizedThreadId)
+  };
+}
+
 function usage() {
   console.log(`
 xlink CLI
@@ -56,9 +131,19 @@ xlink CLI
 Usage:
   node src/cli.js list [--status pending] [--channel devlog]
   node src/cli.js get <id>
+  node src/cli.js list-threads [--status open] [--channel bridge] [--target-agent <name>] [--source-agent <name>] [--after <iso>] [--agent <name>] [--include-read-state]
+  node src/cli.js get-thread <id> [--agent <name>] [--include-read-state]
+  node src/cli.js thread-messages <id>
+  node src/cli.js append-thread-message <id> --author <name> --body "..." [--kind note]
+  node src/cli.js create-thread-handoff <id> --input ./payload.json [--channel bridge] [--source-agent <name>] [--target-agent <name>] [--title "..."] [--priority medium]
   node src/cli.js mailbox [--agent <name>] [--after <iso>] [--status pending,claimed]
+  node src/cli.js mailbox-unread --agent <name> [--channel bridge] [--thread <threadId>]
+  node src/cli.js ack-mailbox --agent <name> [--cursor <iso>] [--thread <threadId>]
+  node src/cli.js watch-mailbox [--agent <name>] [--after <iso>] [--interval 2000] [--once]
   node src/cli.js conversation <id>
+  node src/cli.js watch-conversation <id> [--after <iso>] [--interval 2000] [--once]
   node src/cli.js preview-devlog <id>
+  node src/cli.js sync-pending-devlogs --agent <name> [--limit 20] [--note "..."] [--result "..."]
   node src/cli.js validate-xbridge-compose <id> [--base-url http://127.0.0.1:3850] [--xbridge-base-url http://127.0.0.1:3846] [--no-record] [--auto-block]
   node src/cli.js record-devlog --input ./payload.json [--source-agent bridge-agent] [--target-agent devlog-agent] [--priority medium] [--handoff-title "..."] [--sync-agent devlog-agent]
   node src/cli.js preview-projection <id> [--channel docs]
@@ -92,6 +177,91 @@ async function loadStores() {
   await handoffStore.initialize();
   await devlogStore.initialize();
   return { handoffStore, devlogStore };
+}
+
+async function buildMailboxSnapshotForCli(handoffStore, flags, cursor) {
+  const threadId = trimOptionalFlag(flags.thread);
+  const [handoffs, threads, readState, readStates] = await Promise.all([
+    handoffStore.list({
+      status: flags.status,
+      threadId,
+      channel: flags.channel,
+      priority: flags.priority,
+      targetAgent: flags.targetAgent,
+      sourceAgent: flags.sourceAgent,
+      updatedSince: cursor
+    }),
+    handoffStore.listThreads({
+      threadId,
+      channel: flags.channel,
+      targetAgent: flags.targetAgent,
+      sourceAgent: flags.sourceAgent,
+      updatedSince: cursor
+    }),
+    flags.agent ? handoffStore.getMailboxReadState(flags.agent, { threadId }) : Promise.resolve(null),
+    flags.agent && typeof handoffStore.listMailboxReadStates === "function"
+      ? handoffStore.listMailboxReadStates(flags.agent)
+      : Promise.resolve([])
+  ]);
+  const collections = filterMailboxCollectionsByThread({ handoffs, threads }, threadId);
+  const readStateByThread = Object.fromEntries(
+    (readStates ?? [])
+      .filter((item) => item?.threadId)
+      .map((item) => [item.threadId, item.lastReadAt ?? null])
+  );
+
+  return buildMailboxSnapshot(collections, {
+    status: flags.status,
+    channel: flags.channel,
+    targetAgent: flags.targetAgent,
+    sourceAgent: flags.sourceAgent,
+    agent: flags.agent,
+    threadId,
+    statuses: flags.status ? [flags.status] : [],
+    after: cursor,
+    includeClosed: flags["include-closed"] === true || flags.includeClosed === true,
+    lastReadAt: readState?.globalLastReadAt ?? readState?.lastReadAt ?? null,
+    readStateByThread
+  });
+}
+
+async function buildThreadSummariesForCli(handoffStore, flags, threadId) {
+  const agent = getOptionalFlag(flags, "agent");
+  const [threads, handoffs, readState, readStates] = await Promise.all([
+    handoffStore.listThreads(getThreadRouteFiltersForCli(flags, threadId)),
+    handoffStore.list(getHandoffFiltersForThreadCli(flags, threadId)),
+    agent ? handoffStore.getMailboxReadState(agent, { threadId }) : Promise.resolve(null),
+    agent && typeof handoffStore.listMailboxReadStates === "function"
+      ? handoffStore.listMailboxReadStates(agent)
+      : Promise.resolve([])
+  ]);
+  const readStateByThread = Object.fromEntries(
+    (readStates ?? [])
+      .filter((item) => item?.threadId)
+      .map((item) => [item.threadId, item.lastReadAt ?? null])
+  );
+  const summaries = buildThreadInbox(threads, handoffs, {
+    agent,
+    threadId,
+    status: getOptionalFlag(flags, "status"),
+    channel: getOptionalFlag(flags, "channel"),
+    targetAgent: getOptionalFlag(flags, "target-agent", "targetAgent"),
+    sourceAgent: getOptionalFlag(flags, "source-agent", "sourceAgent"),
+    after: getOptionalFlag(flags, "after"),
+    lastReadAt: readState?.globalLastReadAt ?? readState?.lastReadAt ?? null,
+    readStateByThread
+  });
+
+  return {
+    summaries,
+    mailbox: {
+      agent,
+      threadId: threadId ?? null,
+      unreadCount: summaries.filter((item) => item.unread).length,
+      total: summaries.length
+    },
+    readState: readState ?? null
+  };
 }
 
 async function loadChannelProjectionStore(channel) {
@@ -224,24 +394,110 @@ async function main() {
       return;
     }
 
-    case "mailbox": {
-      const handoffs = await handoffStore.list({
-        status: flags.status,
-        channel: flags.channel,
-        priority: flags.priority,
-        targetAgent: flags.targetAgent,
-        sourceAgent: flags.sourceAgent,
-        updatedSince: flags.after
-      });
+    case "list-threads": {
+      const threads = await handoffStore.listThreads(getThreadRouteFiltersForCli(flags));
+      const payload = { threads };
+
+      if (shouldIncludeThreadSummaries(flags)) {
+        const { summaries, mailbox } = await buildThreadSummariesForCli(handoffStore, flags);
+        payload.summaries = summaries;
+        payload.mailbox = mailbox;
+      }
+
+      printJson(payload);
+      return;
+    }
+
+    case "get-thread": {
+      const id = positionals[0];
+      const thread = await handoffStore.getThreadById(id);
+      const payload = { thread };
+
+      if (shouldIncludeThreadSummaries(flags)) {
+        const { summaries, readState } = await buildThreadSummariesForCli(handoffStore, flags, id);
+        payload.summary = summaries[0] ?? null;
+        payload.readState = readState;
+      }
+
+      printJson(payload);
+      return;
+    }
+
+    case "thread-messages": {
+      const id = positionals[0];
+      const thread = await handoffStore.getThreadById(id);
       printJson({
-        ...buildMailboxSnapshot(handoffs, {
-          agent: flags.agent,
-          channel: flags.channel,
-          status: flags.status,
-          statuses: flags.status ? [flags.status] : [],
-          after: flags.after,
-          includeClosed: flags["include-closed"] === true || flags.includeClosed === true
-        })
+        thread,
+        messages: Array.isArray(thread.messages) ? thread.messages : []
+      });
+      return;
+    }
+
+    case "append-thread-message": {
+      const id = positionals[0];
+      const thread = await handoffStore.appendThreadMessage(id, {
+        author: flags.author,
+        body: flags.body,
+        kind: flags.kind
+      });
+      printJson({ thread });
+      return;
+    }
+
+    case "create-thread-handoff": {
+      const id = positionals[0];
+      const payloadPath = flags.input ?? flags.payload;
+      if (!payloadPath) {
+        throw new Error("create-thread-handoff requires --input <payload.json>");
+      }
+
+      const payload = await readPayloadFile(payloadPath);
+      const result = await handoffStore.createThreadHandoff(id, {
+        payload,
+        channel: flags.channel,
+        sourceAgent: flags["source-agent"],
+        targetAgent: flags["target-agent"],
+        title: flags.title,
+        priority: flags.priority
+      });
+      printJson(result);
+      return;
+    }
+
+    case "mailbox": {
+      printJson(await buildMailboxSnapshotForCli(handoffStore, flags, flags.after));
+      return;
+    }
+
+    case "mailbox-unread": {
+      const threadId = trimOptionalFlag(flags.thread);
+      const readState = await handoffStore.getMailboxReadState(flags.agent, { threadId });
+      const snapshot = await buildMailboxSnapshotForCli(handoffStore, flags, undefined);
+      printJson({
+        agent: flags.agent,
+        threadId,
+        lastReadAt: readState.lastReadAt,
+        unreadCount: snapshot.mailbox.unreadCount ?? 0,
+        threadIds: snapshot.threads.filter((item) => item.unread).map((item) => item.id),
+        handoffIds: Array.from(
+          new Set(
+            snapshot.threads
+              .filter((item) => item.unread)
+              .flatMap((item) => (Array.isArray(item.handoffIds) ? item.handoffIds : []))
+          )
+        )
+      });
+      return;
+    }
+
+    case "ack-mailbox": {
+      const threadId = trimOptionalFlag(flags.thread);
+      const ack = await handoffStore.ackMailbox(flags.agent, { cursor: flags.cursor, threadId });
+      const snapshot = await buildMailboxSnapshotForCli(handoffStore, flags, undefined);
+      printJson({
+        ack,
+        unreadCount: snapshot.mailbox.unreadCount ?? 0,
+        threadId: ack.threadId ?? null
       });
       return;
     }
@@ -253,12 +509,54 @@ async function main() {
       return;
     }
 
+    case "watch-mailbox": {
+      const interval = parseInterval(flags.interval, 2000);
+      let cursor = flags.after;
+
+      while (true) {
+        const snapshot = await buildMailboxSnapshotForCli(handoffStore, flags, cursor);
+
+        if (snapshot.threads.length > 0 || snapshot.handoffs.length > 0) {
+          printJson(snapshot);
+          cursor = snapshot.mailbox.nextAfter ?? cursor;
+        }
+
+        if (flags.once === true) {
+          return;
+        }
+
+        await sleep(interval);
+      }
+    }
+
     case "preview-devlog": {
       const id = positionals[0];
       const handoff = await handoffStore.getById(id);
       const card = toDevlogCard(handoff);
       printJson({ card });
       return;
+    }
+
+    case "watch-conversation": {
+      const id = positionals[0];
+      const interval = parseInterval(flags.interval, 2000);
+      let cursor = flags.after;
+
+      while (true) {
+        const handoff = await handoffStore.getById(id);
+        const snapshot = buildConversationSnapshot(handoff, { after: cursor });
+
+        if (snapshot.delta.hasChanges) {
+          printJson(snapshot);
+          cursor = snapshot.delta.nextAfter ?? cursor;
+        }
+
+        if (flags.once === true) {
+          return;
+        }
+
+        await sleep(interval);
+      }
     }
 
     case "validate-xbridge-compose": {
@@ -311,21 +609,27 @@ async function main() {
         payload
       });
 
-      await handoffStore.claim(handoff.id, {
+      const { handoff: completed, ingest } = await syncDevlogHandoff(handoffStore, devlogStore, handoff, {
         agent: syncAgent,
-        note: flags.note ?? "devlog sync started"
+        note: flags.note,
+        result: flags.result
       });
-      const completed = await handoffStore.complete(handoff.id, {
-        agent: syncAgent,
-        result: flags.result ?? "devlog card ingested and handoff completed"
-      });
-      const card = toDevlogCard(completed);
-      const ingest = await devlogStore.ingest(card);
 
       printJson({
         handoff: completed,
         ingest
       });
+      return;
+    }
+
+    case "sync-pending-devlogs": {
+      const summary = await syncPendingDevlogHandoffs(handoffStore, devlogStore, {
+        agent: flags.agent,
+        limit: flags.limit,
+        note: flags.note,
+        result: flags.result
+      });
+      printJson(summary);
       return;
     }
 
@@ -431,20 +735,10 @@ async function main() {
 
     case "sync-devlog": {
       const id = positionals[0];
-      let handoff = await handoffStore.getById(id);
-
-      if (handoff.status === "pending") {
-        handoff = await handoffStore.claim(id, {
-          agent: flags.agent,
-          note: flags.note ?? "devlog sync started"
-        });
-      }
-
-      const card = toDevlogCard(handoff);
-      const ingest = await devlogStore.ingest(card);
-      const completed = await handoffStore.complete(id, {
+      const { handoff: completed, ingest } = await syncDevlogHandoff(handoffStore, devlogStore, id, {
         agent: flags.agent,
-        result: flags.result ?? "devlog card ingested and handoff completed"
+        note: flags.note,
+        result: flags.result
       });
 
       printJson({

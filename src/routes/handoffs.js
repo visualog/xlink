@@ -1,11 +1,41 @@
 import { json, readJsonBody } from "../http.js";
 import { buildConversationSnapshot } from "../mailbox.js";
 import { toDevlogCard } from "../devlog.js";
+import { syncDevlogHandoff } from "../devlog-sync.js";
 import { projectHandoff } from "../projections.js";
+import { parseStreamInterval, startSse, writeSse } from "../sse.js";
 import {
   validateXbridgeComposePayload,
   validateXbridgeComposeWithRetry
 } from "../xbridge-validator.js";
+
+async function buildHandoffConversationSnapshot(store, handoff, cursorInput = {}) {
+  const thread =
+    handoff.threadId
+      ? await store.getThreadById(handoff.threadId).catch(() => null)
+      : null;
+
+  const effectiveMessages =
+    thread && Array.isArray(thread.messages) && thread.messages.length > 0
+      ? thread.messages
+      : Array.isArray(handoff.messages)
+        ? handoff.messages
+        : [];
+
+  const effectiveUpdatedAt =
+    thread?.updatedAt && (!handoff.updatedAt || thread.updatedAt > handoff.updatedAt)
+      ? thread.updatedAt
+      : handoff.updatedAt;
+
+  return buildConversationSnapshot(
+    {
+      ...handoff,
+      updatedAt: effectiveUpdatedAt,
+      messages: effectiveMessages
+    },
+    cursorInput
+  );
+}
 
 export function createHandoffRoutes(store, options = {}) {
   const devlogStore = options.devlogStore ?? null;
@@ -45,8 +75,64 @@ export function createHandoffRoutes(store, options = {}) {
     }
 
     if (request.method === "GET" && pathParts[2] === "conversation") {
+      if (pathParts[3] === "stream") {
+        let cursor = url.searchParams.get("after") ?? url.searchParams.get("since") ?? undefined;
+        const intervalMs = parseStreamInterval(url.searchParams.get("interval"), 2000);
+        startSse(response);
+        writeSse(response, "ready", {
+          stream: "conversation",
+          handoffId: id,
+          intervalMs,
+          cursor: cursor ?? null
+        });
+
+        let inFlight = false;
+        const publish = async () => {
+          if (inFlight) {
+            return;
+          }
+          inFlight = true;
+          try {
+            const handoff = await store.getById(id);
+            const snapshot = await buildHandoffConversationSnapshot(store, handoff, { after: cursor });
+            if (snapshot.delta.hasChanges) {
+              writeSse(response, "conversation", snapshot);
+              cursor = snapshot.delta.nextAfter ?? cursor;
+            } else {
+              writeSse(response, "heartbeat", {
+                stream: "conversation",
+                handoffId: id,
+                cursor: cursor ?? null,
+                now: new Date().toISOString()
+              });
+            }
+          } finally {
+            inFlight = false;
+          }
+        };
+
+        await publish();
+        const timer = setInterval(() => {
+          publish().catch((error) => {
+            writeSse(response, "error", { message: error.message });
+          });
+        }, intervalMs);
+
+        request.on("close", () => {
+          clearInterval(timer);
+          if (!response.writableEnded) {
+            response.end();
+          }
+        });
+
+        return true;
+      }
+
       const handoff = await store.getById(id);
-      const snapshot = buildConversationSnapshot(handoff);
+      const snapshot = await buildHandoffConversationSnapshot(store, handoff, {
+        after: url.searchParams.get("after") ?? undefined,
+        since: url.searchParams.get("since") ?? undefined
+      });
       json(response, 200, snapshot);
       return true;
     }
@@ -85,19 +171,7 @@ export function createHandoffRoutes(store, options = {}) {
       }
 
       const body = await readJsonBody(request);
-      const agent = body.agent;
-      const note = body.note ?? "devlog sync started";
-      const resultMessage = body.result ?? "devlog card ingested and handoff completed";
-
-      let handoff = await store.getById(id);
-
-      if (handoff.status === "pending") {
-        handoff = await store.claim(id, { agent, note });
-      }
-
-      const completed = await store.complete(id, { agent, result: resultMessage });
-      const card = toDevlogCard(completed);
-      const ingestResult = await devlogStore.ingest(card);
+      const { handoff: completed, ingest: ingestResult } = await syncDevlogHandoff(store, devlogStore, id, body);
 
       json(response, 200, {
         handoff: completed,

@@ -5,9 +5,16 @@ import { createHandoffStore } from "./store.js";
 import { JsonDevlogStore } from "./devlog-store.js";
 import { JsonChannelProjectionStore } from "./channel-store.js";
 import { createHandoffRoutes } from "./routes/handoffs.js";
+import { createMailboxRoutes } from "./routes/mailbox.js";
+import { createChannelRoutes } from "./routes/channels.js";
+import { createDashboardRoutes } from "./routes/dashboard.js";
+import { createDesignerRoutes } from "./routes/designer.js";
+import { createReviewRoutes } from "./routes/review.js";
+import { createThreadRoutes } from "./routes/threads.js";
+import { createAutomationRoutes } from "./routes/automation.js";
 import { getPathParts, json, notFound, withErrorHandling } from "./http.js";
 import { buildDashboardSnapshot } from "./build-dashboard.js";
-import { buildMailboxSnapshot } from "./mailbox.js";
+import { createDevlogAutomationRunner } from "./automation-runner.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +31,10 @@ const CHANNEL_DATA_DIR = process.env.CHANNEL_DATA_DIR
 const DASHBOARD_DATA_PATH = process.env.DASHBOARD_DATA_PATH
   ? path.resolve(process.env.DASHBOARD_DATA_PATH)
   : path.resolve(__dirname, "../data/dashboard.json");
+const AUTO_SYNC_PENDING_DEVLOGS = process.env.AUTO_SYNC_PENDING_DEVLOGS === "true";
+const AUTO_SYNC_PENDING_DEVLOGS_INTERVAL_MS = Number(process.env.AUTO_SYNC_PENDING_DEVLOGS_INTERVAL_MS ?? "60000");
+const AUTO_SYNC_PENDING_DEVLOGS_LIMIT = Number(process.env.AUTO_SYNC_PENDING_DEVLOGS_LIMIT ?? "20");
+const AUTO_SYNC_PENDING_DEVLOGS_AGENT = process.env.AUTO_SYNC_PENDING_DEVLOGS_AGENT ?? "devlog-agent";
 
 function buildProjectionStores() {
   const channels = ["bridge", "figma", "docs", "review"];
@@ -48,7 +59,31 @@ async function createServer() {
   for (const projectionStore of projectionStores.values()) {
     await projectionStore.initialize();
   }
+  const devlogRunner = createDevlogAutomationRunner(store, devlogStore, {
+    enabled: AUTO_SYNC_PENDING_DEVLOGS,
+    agent: AUTO_SYNC_PENDING_DEVLOGS_AGENT,
+    intervalMs: AUTO_SYNC_PENDING_DEVLOGS_INTERVAL_MS,
+    limit: AUTO_SYNC_PENDING_DEVLOGS_LIMIT
+  });
+  devlogRunner.start();
   const handleHandoffRoute = createHandoffRoutes(store, { devlogStore, projectionStores });
+  const handleMailboxRoute = createMailboxRoutes(store);
+  const handleChannelRoute = createChannelRoutes(projectionStores);
+  const handleDesignerRoute = createDesignerRoutes(store, projectionStores);
+  const handleReviewRoute = createReviewRoutes(store, projectionStores);
+  const handleThreadRoute = createThreadRoutes(store, projectionStores);
+  const handleAutomationRoute = createAutomationRoutes(store, { devlogStore, devlogRunner });
+  const handleDashboardRoute = createDashboardRoutes({
+    dataPath: DASHBOARD_DATA_PATH,
+    rebuildDashboard: buildDashboardSnapshot,
+    rebuildOptions: {
+      backend: STORE_BACKEND,
+      handoffDataPath: HANDOFF_DATA_PATH,
+      channelDataDir: CHANNEL_DATA_DIR,
+      devlogDataPath: DEVLOG_DATA_PATH,
+      outputPath: DASHBOARD_DATA_PATH
+    }
+  });
 
   return http.createServer(async (request, response) => {
     const url = new URL(request.url, "http://127.0.0.1");
@@ -60,6 +95,9 @@ async function createServer() {
           ok: true,
           service: "xlink",
           store: STORE_BACKEND,
+          automation: {
+            autoSyncPendingDevlogs: AUTO_SYNC_PENDING_DEVLOGS
+          },
           now: new Date().toISOString()
         });
       }
@@ -70,11 +108,32 @@ async function createServer() {
           endpoints: [
             "GET /health",
             "GET /dashboard",
+            "GET /dashboard/snapshot",
             "POST /dashboard/rebuild",
+            "GET /designer/context",
+            "GET /review/context",
+            "POST /review/threads/:id/decision",
             "GET /mailbox",
+            "GET /mailbox/stream",
+            "GET /mailbox/:agent/unread-count",
+            "POST /mailbox/:agent/ack",
+            "GET /threads",
+            "POST /threads",
+            "GET /threads/:id",
+            "GET /threads/:id/context",
+            "GET /threads/:id/messages",
+            "POST /threads/:id/messages",
+            "POST /threads/:id/handoffs",
+            "POST /threads/:id/deliverables",
+            "POST /threads/:id/verification",
+            "GET /automation/devlog/status",
+            "POST /automation/devlog/sync-pending",
+            "GET /channels/:channel/entries",
+            "GET /channels/:channel/entries/:id",
             "GET /handoffs",
             "GET /handoffs/:id",
             "GET /handoffs/:id/conversation",
+            "GET /handoffs/:id/conversation/stream",
             "GET /handoffs/:id/projection",
             "GET /handoffs/:id/devlog-card",
             "POST /handoffs/:id/devlog-ingest",
@@ -94,53 +153,32 @@ async function createServer() {
         });
       }
 
-      if (request.method === "GET" && url.pathname === "/dashboard") {
-        return json(response, 200, {
-          ok: true,
-          dataPath: DASHBOARD_DATA_PATH,
-          updatedAt: new Date().toISOString()
-        });
+      if (await handleDashboardRoute(request, response, url)) {
+        return;
       }
 
-      if (request.method === "GET" && url.pathname === "/mailbox") {
-        const statuses = url.searchParams.getAll("status");
-        const status = statuses.length === 1 ? statuses[0] : undefined;
-        const handoffs = await store.list({
-          status,
-          channel: url.searchParams.get("channel") ?? undefined,
-          priority: url.searchParams.get("priority") ?? undefined,
-          targetAgent: url.searchParams.get("targetAgent") ?? undefined,
-          sourceAgent: url.searchParams.get("sourceAgent") ?? undefined,
-          updatedSince: url.searchParams.get("after") ?? undefined
-        });
-
-        const result = buildMailboxSnapshot(handoffs, {
-          agent: url.searchParams.get("agent") ?? undefined,
-          channel: url.searchParams.get("channel") ?? undefined,
-          status,
-          statuses,
-          after: url.searchParams.get("after") ?? undefined,
-          includeClosed: url.searchParams.get("includeClosed") === "true"
-        });
-
-        return json(response, 200, { ok: true, ...result });
+      if (await handleMailboxRoute(request, response, url)) {
+        return;
       }
 
-      if (request.method === "POST" && url.pathname === "/dashboard/rebuild") {
-        const result = await buildDashboardSnapshot({
-          backend: STORE_BACKEND,
-          handoffDataPath: HANDOFF_DATA_PATH,
-          channelDataDir: CHANNEL_DATA_DIR,
-          devlogDataPath: DEVLOG_DATA_PATH,
-          outputPath: DASHBOARD_DATA_PATH
-        });
+      if (await handleChannelRoute(request, response, url, pathParts)) {
+        return;
+      }
 
-        return json(response, 200, {
-          ok: true,
-          output: result.output,
-          totalHandoffs: result.totalHandoffs,
-          generatedAt: result.payload.generatedAt
-        });
+      if (await handleDesignerRoute(request, response, url)) {
+        return;
+      }
+
+      if (await handleReviewRoute(request, response, url)) {
+        return;
+      }
+
+      if (await handleThreadRoute(request, response, url, pathParts)) {
+        return;
+      }
+
+      if (await handleAutomationRoute(request, response, url, pathParts)) {
+        return;
       }
 
       if (await handleHandoffRoute(request, response, url, pathParts)) {

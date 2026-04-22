@@ -137,13 +137,335 @@ const TOOL_DEFINITIONS = [
     }
   },
   {
+    name: "get_mailbox_unread_count",
+    description: "Return unread mailbox count for a target agent based on the latest ack cursor.",
+    inputSchema: {
+      type: "object",
+      required: ["agent"],
+      properties: {
+        agent: { type: "string" },
+        channel: { type: "string", enum: ["devlog", "bridge", "figma", "docs", "review"] },
+        threadId: { type: "string" },
+        includeClosed: { type: "boolean" }
+      }
+    }
+  },
+  {
+    name: "ack_mailbox",
+    description: "Advance an agent mailbox read cursor so existing handoffs are treated as read.",
+    inputSchema: {
+      type: "object",
+      required: ["agent"],
+      properties: {
+        agent: { type: "string" },
+        cursor: { type: "string" },
+        threadId: { type: "string" }
+      }
+    }
+  },
+  {
+    name: "list_threads",
+    description: "List conversation threads with optional filters.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        agent: { type: "string" },
+        includeReadState: { type: "boolean" },
+        status: { type: "string", enum: ["open", "resolved", "archived"] },
+        channel: { type: "string", enum: ["devlog", "bridge", "figma", "docs", "review"] },
+        targetAgent: { type: "string" },
+        sourceAgent: { type: "string" }
+      }
+    }
+  },
+  {
+    name: "create_thread",
+    description: "Create a standalone collaboration thread.",
+    inputSchema: {
+      type: "object",
+      required: ["channel", "sourceAgent", "targetAgent", "title"],
+      properties: {
+        channel: { type: "string", enum: ["devlog", "bridge", "figma", "docs", "review"] },
+        sourceAgent: { type: "string" },
+        targetAgent: { type: "string" },
+        title: { type: "string" }
+      }
+    }
+  },
+  {
+    name: "get_thread",
+    description: "Fetch a single thread by id.",
+    inputSchema: {
+      type: "object",
+      required: ["id"],
+      properties: {
+        id: { type: "string" },
+        agent: { type: "string" },
+        includeReadState: { type: "boolean" }
+      }
+    }
+  },
+  {
+    name: "get_thread_context",
+    description: "Fetch aggregated thread context for a single thread.",
+    inputSchema: {
+      type: "object",
+      required: ["id"],
+      properties: {
+        id: { type: "string" },
+        agent: { type: "string" },
+        messageLimit: { type: "number" },
+        handoffLimit: { type: "number" },
+        includeClosed: { type: "boolean" }
+      }
+    }
+  },
+  {
+    name: "get_thread_messages",
+    description: "Fetch the message list for a thread.",
+    inputSchema: {
+      type: "object",
+      required: ["id"],
+      properties: {
+        id: { type: "string" }
+      }
+    }
+  },
+  {
+    name: "append_thread_message",
+    description: "Append a message directly to a thread.",
+    inputSchema: {
+      type: "object",
+      required: ["id", "author", "body"],
+      properties: {
+        id: { type: "string" },
+        author: { type: "string" },
+        body: { type: "string" },
+        kind: { type: "string" }
+      }
+    }
+  },
+  {
+    name: "create_thread_handoff",
+    description: "Create a handoff linked to an existing thread.",
+    inputSchema: {
+      type: "object",
+      required: ["id", "payload"],
+      properties: {
+        id: { type: "string" },
+        title: { type: "string" },
+        channel: { type: "string", enum: ["devlog", "bridge", "figma", "docs", "review"] },
+        sourceAgent: { type: "string" },
+        targetAgent: { type: "string" },
+        priority: { type: "string", enum: ["low", "medium", "high"] },
+        payload: { type: "object" }
+      }
+    }
+  },
+  {
+    name: "add_thread_deliverables",
+    description: "Attach one or more deliverable artifacts to the active handoff linked to a thread.",
+    inputSchema: {
+      type: "object",
+      required: ["id", "artifacts"],
+      properties: {
+        id: { type: "string" },
+        agent: { type: "string" },
+        artifacts: {
+          type: "array",
+          items: {
+            type: "object",
+            required: ["type", "path"],
+            properties: {
+              type: { type: "string" },
+              path: { type: "string" },
+              label: { type: "string" }
+            }
+          }
+        },
+        note: { type: "string" },
+        claimIfPending: { type: "boolean" },
+        claimNote: { type: "string" },
+        messageLimit: { type: "number" },
+        handoffLimit: { type: "number" },
+        includeClosed: { type: "boolean" }
+      }
+    }
+  },
+  {
+    name: "record_thread_verification",
+    description: "Record verification status for the active handoff linked to a thread and optionally complete or block it.",
+    inputSchema: {
+      type: "object",
+      required: ["id", "status"],
+      properties: {
+        id: { type: "string" },
+        status: { type: "string" },
+        agent: { type: "string" },
+        summary: { type: "string" },
+        note: { type: "string" },
+        kind: { type: "string" },
+        criteria: {
+          type: "array",
+          items: {
+            anyOf: [
+              { type: "string" },
+              {
+                type: "object",
+                properties: {
+                  text: { type: "string" },
+                  label: { type: "string" },
+                  status: { type: "string" }
+                }
+              }
+            ]
+          }
+        },
+        claimIfPending: { type: "boolean" },
+        claimNote: { type: "string" },
+        autoBlock: { type: "boolean" },
+        blockReason: { type: "string" },
+        completeIfReady: { type: "boolean" },
+        result: { type: "string" },
+        messageLimit: { type: "number" },
+        handoffLimit: { type: "number" },
+        includeClosed: { type: "boolean" }
+      }
+    }
+  },
+  {
+    name: "handoff_thread_for_review",
+    description: "Promote a design thread into the review stage by recording readiness, creating a linked review handoff, and carrying over deliverables.",
+    inputSchema: {
+      type: "object",
+      required: ["id"],
+      properties: {
+        id: { type: "string" },
+        agent: { type: "string" },
+        sourceAgent: { type: "string" },
+        targetAgent: { type: "string" },
+        title: { type: "string" },
+        summary: { type: "string" },
+        priority: { type: "string", enum: ["low", "medium", "high"] },
+        note: { type: "string" },
+        criteria: {
+          type: "array",
+          items: {
+            anyOf: [
+              { type: "string" },
+              {
+                type: "object",
+                properties: {
+                  text: { type: "string" },
+                  label: { type: "string" },
+                  status: { type: "string" }
+                }
+              }
+            ]
+          }
+        },
+        completeIfReady: { type: "boolean" },
+        includeClosed: { type: "boolean" }
+      }
+    }
+  },
+  {
     name: "get_conversation",
     description: "Inspect the full conversation state for a handoff.",
     inputSchema: {
       type: "object",
       required: ["id"],
       properties: {
-        id: { type: "string" }
+        id: { type: "string" },
+        after: { type: "string" }
+      }
+    }
+  },
+  {
+    name: "get_designer_context",
+    description: "Read aggregated designer-facing context from the consumer surface.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        agent: { type: "string" },
+        channel: { type: "string", enum: ["devlog", "bridge", "figma", "docs", "review"] },
+        limit: { type: "number" },
+        handoffLimit: { type: "number" },
+        briefLimit: { type: "number" },
+        includeClosed: { type: "boolean" }
+      }
+    }
+  },
+  {
+    name: "get_review_context",
+    description: "Read aggregated review-facing context from the consumer surface.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        agent: { type: "string" },
+        limit: { type: "number" },
+        handoffLimit: { type: "number" },
+        briefLimit: { type: "number" },
+        includeClosed: { type: "boolean" }
+      }
+    }
+  },
+  {
+    name: "decide_review_thread",
+    description: "Record a review decision for the active review handoff on a thread and optionally create a design follow-up.",
+    inputSchema: {
+      type: "object",
+      required: ["id", "decision"],
+      properties: {
+        id: { type: "string" },
+        decision: { type: "string", enum: ["approved", "changes-requested", "blocked"] },
+        agent: { type: "string" },
+        summary: { type: "string" },
+        note: { type: "string" },
+        result: { type: "string" },
+        reason: { type: "string" },
+        priority: { type: "string", enum: ["low", "medium", "high"] },
+        targetAgent: { type: "string" },
+        sourceAgent: { type: "string" },
+        claimIfPending: { type: "boolean" },
+        claimNote: { type: "string" },
+        createFollowup: { type: "boolean" },
+        followupTitle: { type: "string" },
+        followupSummary: { type: "string" },
+        followupType: { type: "string" },
+        followupDetails: { type: "array", items: { type: "string" } },
+        includeClosed: { type: "boolean" }
+      }
+    }
+  },
+  {
+    name: "poll_mailbox_stream",
+    description: "Read a single mailbox update event from the mailbox SSE stream.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        agent: { type: "string" },
+        channel: { type: "string", enum: ["devlog", "bridge", "figma", "docs", "review"] },
+        status: { type: "string", enum: ["pending", "claimed", "completed", "rejected", "blocked"] },
+        after: { type: "string" },
+        includeClosed: { type: "boolean" },
+        interval: { type: "number" },
+        timeoutMs: { type: "number" }
+      }
+    }
+  },
+  {
+    name: "poll_conversation_stream",
+    description: "Read a single conversation delta event from the conversation SSE stream.",
+    inputSchema: {
+      type: "object",
+      required: ["id"],
+      properties: {
+        id: { type: "string" },
+        after: { type: "string" },
+        since: { type: "string" },
+        interval: { type: "number" },
+        timeoutMs: { type: "number" }
       }
     }
   },
@@ -158,6 +480,37 @@ const TOOL_DEFINITIONS = [
         author: { type: "string" },
         body: { type: "string" },
         kind: { type: "string" }
+      }
+    }
+  },
+  {
+    name: "get_dashboard_snapshot",
+    description: "Read the generated dashboard snapshot JSON.",
+    inputSchema: {
+      type: "object",
+      properties: {}
+    }
+  },
+  {
+    name: "list_channel_entries",
+    description: "List ingested projection entries for a channel.",
+    inputSchema: {
+      type: "object",
+      required: ["channel"],
+      properties: {
+        channel: { type: "string", enum: ["bridge", "figma", "docs", "review"] }
+      }
+    }
+  },
+  {
+    name: "get_channel_entry",
+    description: "Read a single ingested projection entry by id.",
+    inputSchema: {
+      type: "object",
+      required: ["channel", "id"],
+      properties: {
+        channel: { type: "string", enum: ["bridge", "figma", "docs", "review"] },
+        id: { type: "string" }
       }
     }
   },
@@ -204,6 +557,20 @@ const TOOL_DEFINITIONS = [
       properties: {
         id: { type: "string" },
         agent: { type: "string" },
+        note: { type: "string" },
+        result: { type: "string" }
+      }
+    }
+  },
+  {
+    name: "sync_pending_devlogs",
+    description: "Bulk-sync pending devlog handoffs through the automation catch-up endpoint.",
+    inputSchema: {
+      type: "object",
+      required: ["agent"],
+      properties: {
+        agent: { type: "string" },
+        limit: { type: "number" },
         note: { type: "string" },
         result: { type: "string" }
       }
@@ -297,6 +664,174 @@ async function requestJson(baseUrl, pathname, options = {}, fetchImpl = fetch) {
   return payload;
 }
 
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function buildReviewPayloadFromContext(context, args = {}) {
+  const designIntent = context?.task?.designIntent ?? {};
+  const summary = args.summary ?? context?.task?.objective ?? context?.thread?.title ?? "Review design handoff";
+  const criteria = Array.isArray(designIntent.acceptanceCriteria) ? designIntent.acceptanceCriteria : [];
+  const details = []
+    .concat(criteria.length > 0 ? criteria.map((item) => `acceptance: ${item}`) : [])
+    .concat(context?.summary?.executionStage ? [`stage: ${context.summary.executionStage}`] : [])
+    .concat(context?.assessment?.status ? [`assessment: ${context.assessment.status}`] : []);
+
+  return {
+    type: "design-review",
+    title: args.title ?? `Review: ${context?.thread?.title ?? "design thread"}`,
+    date: todayIsoDate(),
+    summary,
+    details,
+    tags: ["review", "figma"],
+    files: Array.isArray(context?.assets?.files) ? context.assets.files : [],
+    links: Array.isArray(context?.assets?.links) ? context.assets.links : [],
+    figmaFileKey: designIntent.fileKey ?? null,
+    nodeId: designIntent.nodeId ?? null,
+    screenName: designIntent.screenName ?? null,
+    designGoal: designIntent.designGoal ?? null,
+    acceptanceCriteria: criteria
+  };
+}
+
+function parseSseEventBlock(block) {
+  const lines = String(block || "")
+    .split("\n")
+    .map((line) => line.trimEnd());
+  let event = "message";
+  const dataLines = [];
+
+  for (const line of lines) {
+    if (!line) {
+      continue;
+    }
+    if (line.startsWith("event:")) {
+      event = line.slice("event:".length).trim() || "message";
+      continue;
+    }
+    if (line.startsWith("data:")) {
+      dataLines.push(line.slice("data:".length).trimStart());
+    }
+  }
+
+  const rawData = dataLines.join("\n");
+  let data = rawData;
+  if (rawData) {
+    try {
+      data = JSON.parse(rawData);
+    } catch {
+      data = rawData;
+    }
+  }
+
+  return {
+    event,
+    data
+  };
+}
+
+async function requestSingleSseEvent(baseUrl, pathname, options = {}, fetchImpl = fetch) {
+  const timeoutMs =
+    typeof options.timeoutMs === "number" && Number.isFinite(options.timeoutMs) && options.timeoutMs > 0
+      ? Math.trunc(options.timeoutMs)
+      : 5000;
+  const targets = new Set(options.targetEvents ?? []);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  const response = await fetchImpl(buildUrl(baseUrl, pathname, options.query), {
+    method: "GET",
+    headers: {
+      Accept: "text/event-stream",
+      ...(options.headers ?? {})
+    },
+    signal: controller.signal
+  });
+
+  if (!response.ok) {
+    clearTimeout(timeout);
+    const text = typeof response.text === "function" ? await response.text() : "";
+    let payload = {};
+    if (text) {
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        payload = { error: text };
+      }
+    }
+    const message = payload.error ?? `Request failed with status ${response.status}`;
+    throw new Error(message);
+  }
+
+  const tryEvents = (rawText) => {
+    let buffer = String(rawText || "").replaceAll("\r\n", "\n");
+    while (true) {
+      const separatorIndex = buffer.indexOf("\n\n");
+      if (separatorIndex === -1) {
+        return { matched: null, buffer };
+      }
+      const block = buffer.slice(0, separatorIndex);
+      buffer = buffer.slice(separatorIndex + 2);
+      const parsed = parseSseEventBlock(block);
+
+      if (parsed.event === "error") {
+        const errorMessage =
+          typeof parsed.data === "object" && parsed.data && parsed.data.message
+            ? parsed.data.message
+            : "SSE stream returned error event";
+        throw new Error(errorMessage);
+      }
+
+      if (targets.has(parsed.event)) {
+        return { matched: parsed, buffer };
+      }
+    }
+  };
+
+  try {
+    if (response.body?.getReader) {
+      const decoder = new TextDecoder();
+      const reader = response.body.getReader();
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          const flush = tryEvents(buffer);
+          if (flush.matched) {
+            return flush.matched;
+          }
+          break;
+        }
+        buffer += decoder.decode(value, { stream: true });
+        const result = tryEvents(buffer);
+        buffer = result.buffer;
+        if (result.matched) {
+          return result.matched;
+        }
+      }
+    }
+
+    if (typeof response.text === "function") {
+      const text = await response.text();
+      const result = tryEvents(text);
+      if (result.matched) {
+        return result.matched;
+      }
+    }
+
+    throw new Error("No matching SSE event found");
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error(`Timed out waiting for SSE event (${timeoutMs}ms)`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+    controller.abort();
+  }
+}
+
 export function listTools() {
   return TOOL_DEFINITIONS;
 }
@@ -314,8 +849,270 @@ export async function callTool(name, args, options = {}) {
       return requestJson(baseUrl, `/handoffs/${args.id}`, {}, fetchImpl);
     case "get_mailbox":
       return requestJson(baseUrl, "/mailbox", { query: args }, fetchImpl);
+    case "get_mailbox_unread_count":
+      return requestJson(baseUrl, `/mailbox/${encodeURIComponent(args.agent)}/unread-count`, {
+        query: {
+          channel: args.channel,
+          threadId: args.threadId,
+          includeClosed: args.includeClosed
+        }
+      }, fetchImpl);
+    case "ack_mailbox":
+      return requestJson(baseUrl, `/mailbox/${encodeURIComponent(args.agent)}/ack`, {
+        method: "POST",
+        body: {
+          cursor: args.cursor,
+          threadId: args.threadId
+        }
+      }, fetchImpl);
+    case "list_threads":
+      return requestJson(baseUrl, "/threads", {
+        query: {
+          agent: args.agent,
+          includeReadState: args.includeReadState,
+          status: args.status,
+          channel: args.channel,
+          targetAgent: args.targetAgent,
+          sourceAgent: args.sourceAgent
+        }
+      }, fetchImpl);
+    case "create_thread":
+      return requestJson(baseUrl, "/threads", { method: "POST", body: args }, fetchImpl);
+    case "get_thread":
+      return requestJson(baseUrl, `/threads/${args.id}`, {
+        query: {
+          agent: args.agent,
+          includeReadState: args.includeReadState
+        }
+      }, fetchImpl);
+    case "get_thread_context":
+      return requestJson(baseUrl, `/threads/${args.id}/context`, {
+        query: {
+          agent: args.agent,
+          messageLimit: args.messageLimit,
+          handoffLimit: args.handoffLimit,
+          includeClosed: args.includeClosed
+        }
+      }, fetchImpl);
+    case "get_thread_messages":
+      return requestJson(baseUrl, `/threads/${args.id}/messages`, {}, fetchImpl);
+    case "append_thread_message":
+      return requestJson(baseUrl, `/threads/${args.id}/messages`, {
+        method: "POST",
+        body: {
+          author: args.author,
+          body: args.body,
+          kind: args.kind
+        }
+      }, fetchImpl);
+    case "create_thread_handoff":
+      return requestJson(baseUrl, `/threads/${args.id}/handoffs`, {
+        method: "POST",
+        body: {
+          title: args.title,
+          channel: args.channel,
+          sourceAgent: args.sourceAgent,
+          targetAgent: args.targetAgent,
+          priority: args.priority,
+          payload: args.payload
+        }
+      }, fetchImpl);
+    case "add_thread_deliverables":
+      return requestJson(baseUrl, `/threads/${args.id}/deliverables`, {
+        method: "POST",
+        body: {
+          agent: args.agent,
+          artifacts: args.artifacts,
+          note: args.note,
+          claimIfPending: args.claimIfPending,
+          claimNote: args.claimNote,
+          messageLimit: args.messageLimit,
+          handoffLimit: args.handoffLimit,
+          includeClosed: args.includeClosed
+        }
+      }, fetchImpl);
+    case "record_thread_verification":
+      return requestJson(baseUrl, `/threads/${args.id}/verification`, {
+        method: "POST",
+        body: {
+          status: args.status,
+          agent: args.agent,
+          summary: args.summary,
+          note: args.note,
+          kind: args.kind,
+          criteria: args.criteria,
+          claimIfPending: args.claimIfPending,
+          claimNote: args.claimNote,
+          autoBlock: args.autoBlock,
+          blockReason: args.blockReason,
+          completeIfReady: args.completeIfReady,
+          result: args.result,
+          messageLimit: args.messageLimit,
+          handoffLimit: args.handoffLimit,
+          includeClosed: args.includeClosed
+        }
+      }, fetchImpl);
+    case "handoff_thread_for_review": {
+      const agent = args.agent ?? "designer-agent";
+      const includeClosed = args.includeClosed ?? true;
+      let contextPayload = await requestJson(baseUrl, `/threads/${args.id}/context`, {
+        query: {
+          agent,
+          includeClosed
+        }
+      }, fetchImpl);
+
+      const status = contextPayload?.context?.assessment?.status ?? null;
+      const readyStatuses = new Set(["ready-for-review", "ready-for-handoff"]);
+
+      if (!readyStatuses.has(status)) {
+        await requestJson(baseUrl, `/threads/${args.id}/verification`, {
+          method: "POST",
+          body: {
+            agent,
+            status: "ready-for-review",
+            criteria: args.criteria,
+            note: args.note,
+            completeIfReady: args.completeIfReady ?? true,
+            includeClosed
+          }
+        }, fetchImpl);
+
+        contextPayload = await requestJson(baseUrl, `/threads/${args.id}/context`, {
+          query: {
+            agent,
+            includeClosed
+          }
+        }, fetchImpl);
+      }
+
+      const reviewPayload = buildReviewPayloadFromContext(contextPayload.context, args);
+      const createResult = await requestJson(baseUrl, `/threads/${args.id}/handoffs`, {
+        method: "POST",
+        body: {
+          channel: "review",
+          sourceAgent: args.sourceAgent ?? agent,
+          targetAgent: args.targetAgent ?? "review-agent",
+          priority: args.priority,
+          title: args.title ?? reviewPayload.title,
+          payload: reviewPayload
+        }
+      }, fetchImpl);
+
+      const reviewHandoff = createResult?.handoff ?? null;
+      const deliverables = Array.isArray(contextPayload?.context?.assets?.figmaDeliverables)
+        ? contextPayload.context.assets.figmaDeliverables
+        : [];
+      const attachedArtifacts = [];
+
+      if (reviewHandoff?.id) {
+        for (const deliverable of deliverables) {
+          if (!deliverable?.type || !deliverable?.path) {
+            continue;
+          }
+          await requestJson(baseUrl, `/handoffs/${reviewHandoff.id}/artifacts`, {
+            method: "POST",
+            body: {
+              type: deliverable.type,
+              path: deliverable.path,
+              label: deliverable.label
+            }
+          }, fetchImpl);
+          attachedArtifacts.push({
+            type: deliverable.type,
+            path: deliverable.path,
+            label: deliverable.label ?? null
+          });
+        }
+      }
+
+      return {
+        threadId: args.id,
+        reviewHandoff,
+        attachedArtifacts,
+        sourceAssessment: contextPayload?.context?.assessment ?? null,
+        sourceThread: contextPayload?.context?.thread ?? null
+      };
+    }
     case "get_conversation":
-      return requestJson(baseUrl, `/handoffs/${args.id}/conversation`, {}, fetchImpl);
+      return requestJson(baseUrl, `/handoffs/${args.id}/conversation`, {
+        query: {
+          after: args.after
+        }
+      }, fetchImpl);
+    case "get_designer_context":
+      return requestJson(baseUrl, "/designer/context", {
+        query: {
+          agent: args.agent,
+          channel: args.channel ?? "figma",
+          limit: args.limit,
+          handoffLimit: args.handoffLimit,
+          briefLimit: args.briefLimit,
+          includeClosed: args.includeClosed
+        }
+      }, fetchImpl);
+    case "get_review_context":
+      return requestJson(baseUrl, "/review/context", {
+        query: {
+          agent: args.agent,
+          limit: args.limit,
+          handoffLimit: args.handoffLimit,
+          briefLimit: args.briefLimit,
+          includeClosed: args.includeClosed
+        }
+      }, fetchImpl);
+    case "decide_review_thread":
+      return requestJson(baseUrl, `/review/threads/${args.id}/decision`, {
+        method: "POST",
+        body: {
+          decision: args.decision,
+          agent: args.agent,
+          summary: args.summary,
+          note: args.note,
+          result: args.result,
+          reason: args.reason,
+          priority: args.priority,
+          targetAgent: args.targetAgent,
+          sourceAgent: args.sourceAgent,
+          claimIfPending: args.claimIfPending,
+          claimNote: args.claimNote,
+          createFollowup: args.createFollowup,
+          followupTitle: args.followupTitle,
+          followupSummary: args.followupSummary,
+          followupType: args.followupType,
+          followupDetails: args.followupDetails,
+          includeClosed: args.includeClosed
+        }
+      }, fetchImpl);
+    case "get_dashboard_snapshot":
+      return requestJson(baseUrl, "/dashboard/snapshot", {}, fetchImpl);
+    case "list_channel_entries":
+      return requestJson(baseUrl, `/channels/${encodeURIComponent(args.channel)}/entries`, {}, fetchImpl);
+    case "get_channel_entry":
+      return requestJson(baseUrl, `/channels/${encodeURIComponent(args.channel)}/entries/${encodeURIComponent(args.id)}`, {}, fetchImpl);
+    case "poll_mailbox_stream":
+      return requestSingleSseEvent(baseUrl, "/mailbox/stream", {
+        query: {
+          agent: args.agent,
+          channel: args.channel,
+          status: args.status,
+          after: args.after,
+          includeClosed: args.includeClosed,
+          interval: args.interval
+        },
+        timeoutMs: args.timeoutMs,
+        targetEvents: ["mailbox", "heartbeat"]
+      }, fetchImpl);
+    case "poll_conversation_stream":
+      return requestSingleSseEvent(baseUrl, `/handoffs/${args.id}/conversation/stream`, {
+        query: {
+          after: args.after,
+          since: args.since,
+          interval: args.interval
+        },
+        timeoutMs: args.timeoutMs,
+        targetEvents: ["conversation", "heartbeat"]
+      }, fetchImpl);
     case "append_reply":
       return requestJson(baseUrl, `/handoffs/${args.id}/reply`, {
         method: "POST",
@@ -340,6 +1137,16 @@ export async function callTool(name, args, options = {}) {
         method: "POST",
         body: {
           agent: args.agent,
+          note: args.note,
+          result: args.result
+        }
+      }, fetchImpl);
+    case "sync_pending_devlogs":
+      return requestJson(baseUrl, "/automation/devlog/sync-pending", {
+        method: "POST",
+        body: {
+          agent: args.agent,
+          limit: args.limit,
           note: args.note,
           result: args.result
         }

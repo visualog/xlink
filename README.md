@@ -68,14 +68,36 @@ npm run cli -- record-devlog --input ./payload.json --source-agent bridge-agent 
 
 주요 엔드포인트:
 - `GET /health`
+- `GET /dashboard`
+- `GET /dashboard/snapshot`
+- `POST /dashboard/rebuild`
 - `GET /mailbox`
+- `GET /mailbox/stream` (`after`, `interval` query 지원, SSE)
+- `GET /mailbox/:agent/unread-count` (`threadId` query로 thread scope 가능)
+- `POST /mailbox/:agent/ack` (`cursor`, `threadId` body 지원)
+- `GET /review/context` (`agent?`, `limit?`, `handoffLimit?`, `briefLimit?`, `includeClosed?`)
+- `POST /review/threads/:id/decision`
+- `GET /threads`
+- `POST /threads`
+- `GET /threads/:id`
+- `GET /threads/:id/context` (`agent?`, `messageLimit?`, `handoffLimit?`, `includeClosed?`)
+- `GET /threads/:id/messages`
+- `POST /threads/:id/messages`
+- `POST /threads/:id/handoffs`
+- `POST /threads/:id/deliverables`
+- `POST /threads/:id/verification`
+- `GET /channels/:channel/entries`
+- `GET /channels/:channel/entries/:id`
+- `GET /designer/context` (`agent?`, `channel?`, `limit?`, `handoffLimit?`, `briefLimit?`, `includeClosed?`; 기본 channel은 `figma`)
 - `GET /handoffs`
 - `GET /handoffs/:id`
-- `GET /handoffs/:id/conversation`
+- `GET /handoffs/:id/conversation` (`after` 또는 `since` query 지원)
+- `GET /handoffs/:id/conversation/stream` (`after`/`since`, `interval` query 지원, SSE)
 - `GET /handoffs/:id/projection`
 - `GET /handoffs/:id/devlog-card`
 - `POST /handoffs/:id/devlog-ingest`
 - `POST /handoffs/:id/devlog-sync`
+- `POST /automation/devlog/sync-pending` (메인 에이전트가 automation surface를 로컬에 추가한 경우)
 - `POST /handoffs/:id/channel-ingest`
 - `POST /handoffs/:id/channel-sync`
 - `POST /handoffs/:id/xbridge-validate`
@@ -99,7 +121,81 @@ curl -s 'http://127.0.0.1:3850/mailbox?agent=devlog-agent&after=2026-04-07T00:00
 ```
 
 ```bash
-curl -s http://127.0.0.1:3850/handoffs/handoff_2026_04_07_001/conversation
+curl -N 'http://127.0.0.1:3850/mailbox/stream?agent=devlog-agent&after=2026-04-07T00:00:00.000Z&interval=2000'
+```
+
+```bash
+curl -s 'http://127.0.0.1:3850/mailbox/devlog-agent/unread-count?threadId=thread_2026_04_07_001'
+```
+
+```bash
+curl -s -X POST http://127.0.0.1:3850/mailbox/devlog-agent/ack \
+  -H 'Content-Type: application/json' \
+  -d '{"cursor":"2026-04-07T00:10:00.000Z","threadId":"thread_2026_04_07_001"}'
+```
+
+```bash
+curl -s http://127.0.0.1:3850/dashboard/snapshot
+```
+
+```bash
+curl -s http://127.0.0.1:3850/threads
+```
+
+```bash
+curl -s -X POST http://127.0.0.1:3850/threads \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "channel": "bridge",
+    "sourceAgent": "bridge-agent",
+    "targetAgent": "review-agent",
+    "title": "toolbar layout review"
+  }'
+```
+
+```bash
+curl -s -X POST http://127.0.0.1:3850/threads/thread_2026_04_22_001/deliverables \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "agent": "designer-agent",
+    "artifacts": [
+      {
+        "type": "figma",
+        "path": "/tmp/landing.fig",
+        "label": "landing"
+      }
+    ],
+    "note": "updated hero draft"
+  }'
+```
+
+```bash
+curl -s -X POST http://127.0.0.1:3850/threads/thread_2026_04_22_001/verification \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "agent": "designer-agent",
+    "status": "ready-for-handoff",
+    "completeIfReady": true,
+    "criteria": [
+      {
+        "text": "CTA 유지",
+        "status": "pass"
+      }
+    ],
+    "note": "CTA 유지 확인"
+  }'
+```
+
+```bash
+curl -s http://127.0.0.1:3850/channels/docs/entries
+```
+
+```bash
+curl -s 'http://127.0.0.1:3850/handoffs/handoff_2026_04_07_001/conversation?after=2026-04-07T00:06:30.000Z'
+```
+
+```bash
+curl -N 'http://127.0.0.1:3850/handoffs/handoff_2026_04_07_001/conversation/stream?after=2026-04-07T00:06:30.000Z&interval=2000'
 ```
 
 ```bash
@@ -214,7 +310,43 @@ npm run cli -- mailbox --agent devlog-agent --after 2026-04-07T00:00:00.000Z
 ```
 
 ```bash
+npm run cli -- mailbox-unread --agent devlog-agent --thread thread_2026_04_07_001
+```
+
+```bash
+npm run cli -- ack-mailbox --agent devlog-agent --thread thread_2026_04_07_001 --cursor 2026-04-07T00:10:00.000Z
+```
+
+```bash
+npm run cli -- watch-mailbox --agent devlog-agent --after 2026-04-07T00:00:00.000Z --interval 2000
+```
+
+```bash
 npm run cli -- conversation handoff_2026_04_06_001
+```
+
+```bash
+npm run cli -- watch-conversation handoff_2026_04_06_001 --after 2026-04-07T00:00:00.000Z --interval 2000
+```
+
+```bash
+npm run cli -- list-threads --channel bridge
+```
+
+```bash
+npm run cli -- list-threads --agent review-agent --include-read-state
+```
+
+```bash
+npm run cli -- get-thread thread_2026_04_22_001 --agent review-agent --include-read-state
+```
+
+```bash
+npm run cli -- append-thread-message thread_2026_04_22_001 --author review-agent --body "Spacing looks good now." --kind reply
+```
+
+```bash
+npm run cli -- create-thread-handoff thread_2026_04_22_001 --input ./payload.json
 ```
 
 ```bash
@@ -228,8 +360,17 @@ npm run cli -- validate-xbridge-compose handoff_2026_04_06_001
 지원 명령:
 - `list`
 - `get`
+- `list-threads`
+- `get-thread`
+- `thread-messages`
+- `append-thread-message`
+- `create-thread-handoff`
 - `mailbox`
+- `mailbox-unread`
+- `ack-mailbox`
+- `watch-mailbox`
 - `conversation`
+- `watch-conversation`
 - `preview-devlog`
 - `validate-xbridge-compose`
 - `record-devlog`
@@ -245,6 +386,34 @@ npm run cli -- validate-xbridge-compose handoff_2026_04_06_001
 - `add-artifact`
 - `append-message`
 - `reply`
+- `ingest-devlog`
+- `sync-devlog`
+
+`mailbox`, `watch-mailbox`, `conversation`, `watch-conversation` 동작 요약:
+- `mailbox`: 현재 조건(`agent`, `status`, `channel`, `after`)으로 inbox snapshot 1회를 출력
+- `mailbox-unread`: agent 기준 unread count와 unread handoff id 목록을 출력. `--thread <threadId>`를 주면 해당 thread만 집계한다
+- `ack-mailbox`: agent mailbox의 읽음 cursor를 앞으로 이동. `--thread <threadId>`를 주면 thread scope ack를 전달한다
+- `watch-mailbox`: 같은 snapshot을 interval poll로 반복. 새 handoff/activity가 있을 때만 출력
+- `list-threads`: 기본 thread 목록을 출력하고, `--agent <name>` 또는 `--include-read-state`를 주면 로컬 store에서 계산한 `summaries`/`mailbox`를 함께 붙인다
+- `get-thread`: thread 1개를 출력하고, `--agent <name>` 또는 `--include-read-state`를 주면 로컬 store에서 계산한 `summary`/`readState`를 함께 붙인다
+- `conversation`: handoff 1개의 전체 conversation snapshot 1회를 출력
+- `watch-conversation`: 같은 handoff conversation을 interval poll로 반복. delta 변경이 있을 때만 출력
+- `watch-*` 명령은 `--once`를 주면 1회 실행 후 종료
+
+cursor/nextAfter 의미:
+- `mailbox.after`: 이번 조회에 사용한 입력 cursor(`--after`)
+- `mailbox.lastReadAt`: 현재 agent mailbox가 마지막으로 읽었다고 기록된 시각
+- `mailbox.unreadCount`: 현재 snapshot 기준 unread handoff 개수
+- `mailbox.nextAfter`: 다음 poll에 사용할 권장 cursor (현재 결과의 최신 `updatedAt`)
+- `mailbox.cursor`: `mailbox.nextAfter`와 동일한 alias 필드
+- mailbox item에는 연결된 `threadId`가 함께 포함된다
+- `delta.after`: `watch-conversation`에서 이번 delta 계산에 사용한 입력 cursor
+- `delta.nextAfter`: 다음 conversation poll에 사용할 권장 cursor (status/message/artifact 타임스탬프 최대값)
+
+polling 규칙:
+- `after` 비교는 `>`(strict greater-than) 기준
+- 권장 패턴은 매 루프마다 `nextAfter`를 다음 `after`로 넘기는 것
+- 새 변경이 없으면 watch 명령은 cursor를 유지
 
 ## Xbridge compose validation
 
@@ -343,12 +512,30 @@ npm start
 - `list_handoffs`
 - `get_handoff`
 - `get_mailbox`
+- `get_mailbox_unread_count`
+- `ack_mailbox`
+- `get_review_context`
+- `list_threads`
+- `create_thread`
+- `get_thread`
+- `get_thread_context`
+- `get_thread_messages`
+- `append_thread_message`
+- `create_thread_handoff`
+- `add_thread_deliverables`
+- `record_thread_verification`
+- `handoff_thread_for_review`
+- `decide_review_thread`
 - `get_conversation`
+- `get_designer_context`
+- `poll_mailbox_stream`
+- `poll_conversation_stream`
 - `append_reply`
 - `preview_projection`
 - `preview_devlog_card`
 - `ingest_devlog_card`
 - `sync_devlog_handoff`
+- `sync_pending_devlogs`
 - `ingest_projection`
 - `sync_handoff_channel`
 - `validate_xbridge_compose`
@@ -363,6 +550,120 @@ npm start
 - `initialize`
 - `tools/list`
 - `tools/call`
+
+`get_mailbox_unread_count`, `ack_mailbox`는 optional `threadId`를 받아 thread-scoped unread/ack 요청을 coordinator로 그대로 전달한다. `list_threads`, `get_thread`도 thread route가 `agent`/`includeReadState` query를 지원하면 그대로 전달하며, 이때 thread summary에 unread/read-state 필드가 함께 포함될 수 있다. `get_thread_context`는 `GET /threads/:id/context`를 감싸며 `agent`, `messageLimit`, `handoffLimit`, `includeClosed` query를 consumer surface로 그대로 전달한다. `add_thread_deliverables`는 `POST /threads/:id/deliverables`를 감싸서 활성 handoff에 산출물을 기록하고, `record_thread_verification`은 `POST /threads/:id/verification`을 감싸서 verification 결과를 남기고 필요하면 block/complete까지 이어간다. `handoff_thread_for_review`는 기존 thread context를 읽고 필요 시 readiness를 기록한 뒤, 같은 thread에 `review` 채널 follow-up handoff를 만들고 figma 산출물도 함께 넘긴다. `decide_review_thread`는 review-agent의 결정을 기록한다. `approved`는 review handoff를 완료하고 기본 review context에서 내리며, `changes-requested`는 같은 thread에 `figma` follow-up을 만들고 산출물을 복사한다. `blocked`는 review 큐에 계속 남겨 바로 해소할 수 있게 한다. `get_designer_context`는 designer consumer surface가 handoff, brief, channel 문맥을 한 번에 읽을 수 있도록 `GET /designer/context`를 감싸며, `channel`을 생략하면 MCP tool에서 기본값 `figma`를 사용한다. `get_review_context`는 `GET /review/context`를 감싸서 review-agent 기준 `focusThread`, `focusHandoff`, `focusBrief`, `focusChecklist`, `workQueue`를 한 번에 읽는다.
+
+`GET /threads/:id/context` 응답은 현재 `task.designIntent`, `task.figmaBrief`, `task.executionPlan`, top-level `assessment`를 함께 포함한다. 즉 AI designer는 이 응답 하나로 목표, 제약, acceptance criteria, 현재 실행 단계, 남은 검증 항목을 한 번에 읽을 수 있다.
+
+`GET /designer/context` 응답도 `focusExecutionPlan`, `focusAssessment`, `nextVerification`, `workQueue`를 포함한다. 그래서 consumer는 “지금 어떤 thread를 먼저 잡아야 하는지”뿐 아니라 “다음에 무엇을 검증해야 하는지”까지 한 번에 판단할 수 있다. 현재 `workQueue` 항목은 `assessmentStatus`, `executionStage`, `nextStep`, `queueScore`, `queueReason`까지 포함하므로, thread에 산출물 첨부나 verification 기록이 들어오면 우선순위와 다음 행동이 바로 다시 계산된다. 반대로 더 이상 designer handoff가 없고 unread도 없는 조용한 thread는 기본 큐에서 내려간다.
+
+같은 thread 안에서 `figma` handoff와 `review` handoff가 번갈아 이어지는 루프도 지원한다. 예를 들어 review-agent가 `changes-requested`를 기록하면 같은 thread에 새 `figma` follow-up이 생기고, designer context는 thread의 원래 channel보다 활성 handoff의 channel/target agent를 우선 참고해 이 follow-up을 다시 작업 큐에 올린다.
+
+사용 예시:
+
+```bash
+curl -s 'http://127.0.0.1:3850/designer/context?agent=designer-agent&channel=figma&limit=10&handoffLimit=5&briefLimit=3'
+```
+
+```bash
+curl -s 'http://127.0.0.1:3850/threads/thread_2026_04_22_001/context?agent=review-agent&messageLimit=10&handoffLimit=5&includeClosed=true'
+```
+
+MCP tool 호출 예시:
+
+```json
+{
+  "name": "get_thread_context",
+  "arguments": {
+    "id": "thread_2026_04_22_001",
+    "agent": "review-agent",
+    "messageLimit": 10,
+    "handoffLimit": 5,
+    "includeClosed": true
+  }
+}
+```
+
+```json
+{
+  "name": "get_designer_context",
+  "arguments": {
+    "agent": "designer-agent",
+    "handoffLimit": 5,
+    "briefLimit": 3
+  }
+}
+```
+
+```json
+{
+  "name": "add_thread_deliverables",
+  "arguments": {
+    "id": "thread_2026_04_22_001",
+    "agent": "designer-agent",
+    "artifacts": [
+      {
+        "type": "figma",
+        "path": "/tmp/landing.fig",
+        "label": "landing"
+      }
+    ],
+    "note": "updated hero draft"
+  }
+}
+```
+
+```json
+{
+  "name": "record_thread_verification",
+  "arguments": {
+    "id": "thread_2026_04_22_001",
+    "agent": "designer-agent",
+    "status": "ready-for-handoff",
+    "completeIfReady": true,
+    "criteria": [
+      {
+        "text": "CTA 유지",
+        "status": "pass"
+      }
+    ],
+    "note": "CTA 유지 확인"
+  }
+}
+```
+
+```json
+{
+  "name": "handoff_thread_for_review",
+  "arguments": {
+    "id": "thread_2026_04_22_001",
+    "agent": "designer-agent"
+  }
+}
+```
+
+```json
+{
+  "name": "get_review_context",
+  "arguments": {
+    "agent": "review-agent",
+    "handoffLimit": 5,
+    "briefLimit": 3
+  }
+}
+```
+
+```json
+{
+  "name": "decide_review_thread",
+  "arguments": {
+    "id": "thread_2026_04_22_001",
+    "agent": "review-agent",
+    "decision": "changes-requested",
+    "note": "헤드라인을 더 짧게 만들고 CTA 대비를 높여 주세요."
+  }
+}
+```
 
 즉, MCP 서버가 직접 저장소를 건드리지 않고 기존 HTTP coordinator를 감싸는 구조다.
 
@@ -380,6 +681,7 @@ MCP tool:
 - `preview_devlog_card`
 - `ingest_devlog_card`
 - `sync_devlog_handoff`
+- `sync_pending_devlogs`
 
 이 projection은 handoff를 읽어 아래 필드를 정리한다.
 - `id`
@@ -496,5 +798,22 @@ curl -s -X POST http://127.0.0.1:3850/handoffs/handoff_2026_04_06_001/devlog-syn
     "agent": "devlog-agent",
     "note": "devlog sync started",
     "result": "devlog card ingested and handoff completed"
+  }'
+```
+
+Bulk catch-up action:
+- 메인 에이전트가 `/automation/devlog/sync-pending` endpoint를 로컬 coordinator에 추가했다면, consumer surface에서 pending devlog handoff 여러 건을 한 번에 따라잡을 수 있다.
+- MCP tool `sync_pending_devlogs`는 `{ agent, limit?, note?, result? }`를 그대로 POST body로 전달한다.
+
+HTTP:
+
+```bash
+curl -s -X POST http://127.0.0.1:3850/automation/devlog/sync-pending \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "agent": "devlog-agent",
+    "limit": 10,
+    "note": "bulk devlog sync started",
+    "result": "bulk devlog sync completed"
   }'
 ```

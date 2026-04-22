@@ -33,7 +33,7 @@ function handleMessage(message) {
       },
       serverInfo: {
         name: "xlink-mcp",
-        version: "0.1.0"
+        version: "0.3.17"
       }
     });
   }

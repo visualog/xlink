@@ -1,6 +1,6 @@
 {
   "name": "xlink",
-  "version": "0.1.0",
+  "version": "0.3.17",
   "private": true,
   "description": "Lightweight local coordinator for agent handoffs",
   "type": "module",

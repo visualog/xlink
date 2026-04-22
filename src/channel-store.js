@@ -63,6 +63,51 @@ export class JsonChannelProjectionStore {
     };
   }
 
+  async listEntries(input = {}) {
+    const state = await this.#read();
+    const ids = Array.isArray(input?.ids)
+      ? new Set(
+          input.ids
+            .map((item) => String(item || "").trim())
+            .filter(Boolean)
+        )
+      : null;
+
+    return {
+      channel: state.channel ?? this.channel,
+      updatedAt: state.updatedAt ?? null,
+      entries: ids
+        ? state.entries.filter((entry) => {
+            const key = entry?.id ?? entry?.data?.id;
+            const threadId = entry?.data?.threadId ?? null;
+            return ids.has(key) || (threadId && ids.has(threadId));
+          })
+        : state.entries
+    };
+  }
+
+  async getEntryById(id) {
+    if (typeof id !== "string" || !id.trim()) {
+      throw new StoreError(400, "projection entry id must be a non-empty string.");
+    }
+
+    const state = await this.#read();
+    const entry = state.entries.find((item) => {
+      const key = item?.id ?? item?.data?.id;
+      return key === id;
+    });
+
+    if (!entry) {
+      throw new StoreError(404, `projection entry ${id} was not found in channel ${this.channel}.`);
+    }
+
+    return {
+      channel: state.channel ?? this.channel,
+      updatedAt: state.updatedAt ?? null,
+      entry
+    };
+  }
+
   async #read() {
     const raw = await fs.readFile(this.filePath, "utf8");
     const parsed = JSON.parse(raw);
